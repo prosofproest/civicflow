@@ -12,6 +12,8 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  UserCheck,
+  CheckCircle2,
 } from "lucide-react";
 import { PageShell } from "@/components/ui/PageShell";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -232,6 +234,12 @@ export default function CitizenComplaintsHistoryPage() {
                             <MapPin className="h-3 w-3" />
                             {item.location.address || `${item.location.lat.toFixed(4)}, ${item.location.lng.toFixed(4)}`}
                           </span>
+                          {item.assignedTo && (
+                            <span className="flex items-center gap-1 text-slate-600 font-medium">
+                              <UserCheck className="h-3 w-3 text-blue-600" />
+                              Assigned: {item.assignedTo}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -319,6 +327,19 @@ export default function CitizenComplaintsHistoryPage() {
                               <li key={idx}>{r}</li>
                             ))}
                           </ul>
+                        </div>
+                      )}
+
+                      {/* Official Resolution Notes */}
+                      {item.resolutionNotes && (
+                        <div className="rounded-lg bg-emerald-50 p-3.5 border border-emerald-200 text-emerald-950 space-y-1.5">
+                          <span className="font-semibold flex items-center gap-1.5 text-xs text-emerald-800">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            Official Municipal Resolution Note:
+                          </span>
+                          <p className="text-xs text-emerald-900 leading-relaxed bg-white/90 p-2.5 rounded-md border border-emerald-100 font-medium">
+                            {item.resolutionNotes}
+                          </p>
                         </div>
                       )}
                     </CardContent>

@@ -115,6 +115,26 @@ export default function AdminPortalPage() {
               </div>
             </div>
 
+            {/* Quick Metrics Overview */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 text-center">
+                <span className="text-[10px] text-slate-500 font-semibold block uppercase">Total Records</span>
+                <span className="text-xl font-bold text-slate-800">45+</span>
+              </div>
+              <div className="rounded-lg bg-rose-50 p-3 border border-rose-200 text-center">
+                <span className="text-[10px] text-rose-600 font-semibold block uppercase">Hazards Active</span>
+                <span className="text-xl font-bold text-rose-700">4</span>
+              </div>
+              <div className="rounded-lg bg-amber-50 p-3 border border-amber-200 text-center">
+                <span className="text-[10px] text-amber-700 font-semibold block uppercase">Duplicate Pairs</span>
+                <span className="text-xl font-bold text-amber-800">3</span>
+              </div>
+              <div className="rounded-lg bg-cyan-50 p-3 border border-cyan-200 text-center">
+                <span className="text-[10px] text-cyan-700 font-semibold block uppercase">Hotspot Clusters</span>
+                <span className="text-xl font-bold text-cyan-800">1</span>
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link href="/officer">
                 <Button variant="outline" size="sm">

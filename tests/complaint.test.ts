@@ -90,3 +90,68 @@ test("Complaint Retrieval: filters complaints by reporter UID", async () => {
   assert.ok(citizenComplaints.length >= 1);
   assert.ok(citizenComplaints.every((c) => c.reporterUid === citizenUid));
 });
+
+test("Officer Resolution Workflow: updates status, records status_events, and resolves ticket", async () => {
+  const { updateComplaint, getStatusEvents, getComplaintStats } = await import("../src/lib/services/complaints");
+
+  // 1. Create a fresh complaint
+  const complaint = await createComplaint(
+    {
+      text: "Fallen tree branch blocking two lanes near school crosswalk",
+      category: "road_damage",
+      location: { lat: 12.9750, lng: 77.5900 },
+    },
+    "citizen_for_resolution_test"
+  );
+
+  // 2. Officer assigns ticket
+  const assignResult = await updateComplaint(
+    complaint.id,
+    {
+      status: "assigned",
+      assignedTo: "officer_sharma@civicflow.gov",
+      note: "Dispatched road clearance team unit 4",
+    },
+    {
+      uid: "officer_uid_101",
+      role: "officer",
+    }
+  );
+
+  assert.equal(assignResult.complaint.status, "assigned");
+  assert.equal(assignResult.complaint.assignedTo, "officer_sharma@civicflow.gov");
+  assert.equal(assignResult.event.from, "submitted");
+  assert.equal(assignResult.event.to, "assigned");
+  assert.equal(assignResult.event.actorRole, "officer");
+
+  // 3. Officer resolves ticket with resolution notes
+  const resolveResult = await updateComplaint(
+    complaint.id,
+    {
+      status: "resolved",
+      note: "Tree branch chopped and removed from roadway. Traffic flow restored.",
+    },
+    {
+      uid: "officer_uid_101",
+      role: "officer",
+    }
+  );
+
+  assert.equal(resolveResult.complaint.status, "resolved");
+  assert.equal(resolveResult.complaint.resolutionNotes, "Tree branch chopped and removed from roadway. Traffic flow restored.");
+  assert.equal(resolveResult.event.from, "assigned");
+  assert.equal(resolveResult.event.to, "resolved");
+
+  // 4. Verify audit trail in status_events
+  const events = await getStatusEvents(complaint.id);
+  assert.ok(events.length >= 2);
+  const toStatuses = events.map((e) => e.to);
+  assert.ok(toStatuses.includes("assigned"));
+  assert.ok(toStatuses.includes("resolved"));
+
+  // 5. Verify stats aggregation
+  const stats = await getComplaintStats();
+  assert.ok(stats.total > 0);
+  assert.ok(stats.resolved >= 1);
+  assert.ok(stats.byCategory["road_damage"] >= 1);
+});

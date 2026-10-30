@@ -67,6 +67,7 @@ export interface Complaint {
   location: Location;
   status: Status;
   assignedTo?: string;
+  resolutionNotes?: string;
   priority: Priority;
   duplicate: Duplicate;
   clusterId?: string;

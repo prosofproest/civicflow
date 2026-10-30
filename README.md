@@ -62,8 +62,11 @@ CivicFlow centers around four core lifecycle stages:
 - **Safety Keyword Floor Rule**: Automatically detects 20+ immediate public hazards (`live wire`, `gas leak`, `sinkhole`, `open manhole`, etc.), elevating safety input to $\ge 85$ and guaranteeing a minimum Critical score floor ($\ge 75$).
 - **Duplicate Detection**: Token-based Jaccard similarity combined with Haversine distance ($0.6 \times \text{TextSim} + 0.4 \times \text{ProxScore}$) flagging candidates at confidence $\ge 0.60$ within 150m and 30 days.
 - **Geographic Hotspot Clustering**: Density clustering identifying spatial concentrations of $\ge 3$ reports within a 250m radius, computing geographic centroids and bounding radii.
+- **Interactive Spatial Map (Reveal)**: Client-side Leaflet and OpenStreetMap mapping with dynamic priority markers (pulsing red critical, amber high, blue medium, slate low), duplicate warning indicators, and 250m hotspot cluster overlays with interactive inspection popups.
+- **Authority Dashboard & Resolution Workflow (Act)**: Operational dashboard (`/officer`) providing live distribution metrics, category and status filtering, quick search, ticket inspection drawer, departmental assignment, status progression (`assigned`, `in_progress`, `resolved`), official resolution notes entry, and immutable audit logging to `status_events`.
+- **Citizen Transparency & Resolution Tracking**: Mobile-first citizen portal (`/citizen/complaints`) displaying real-time assignment status, officer attribution, and verified municipal resolution notes banners upon ticket completion.
+- **Admin Management Console (`/admin`)**: Municipal administration overview tracking total records, active hazards, duplicate linkages, and geographic hotspot clusters.
 - **Groq AI with Circuit Breaker**: Structured JSON categorization and summary generation via Groq `llama-3.3-70b-versatile` with an 8-second circuit breaker and instant deterministic rule-based fallback.
-- **Citizen Portal**: Complete submission workflow (`/citizen/submit`) with real-time hazard detection notices and ticket history tracking (`/citizen/complaints`).
 - **Synthetic Demonstration Suite**: 45 realistically modeled civic complaints situated in the fictional Astra Municipal District, including 4 urgent hazards, 3 duplicate groups, and a 7-report transit hotspot.
 
 ---
@@ -75,9 +78,10 @@ CivicFlow centers around four core lifecycle stages:
 | **Framework** | Next.js 16 (App Router, Turbopack) | Server components, edge route middleware, optimized production builds |
 | **Language** | TypeScript 5 (Strict Mode) | End-to-end typed contracts across models, inputs, and database schemas |
 | **Styling** | Tailwind CSS v4 | Lightweight utility tokens, consistent municipal design system |
+| **Interactive Maps** | Leaflet 1.9 & OpenStreetMap | High-performance client-side spatial map, priority markers, and hotspot overlays |
 | **Client Auth** | Firebase Authentication SDK v13 | Email/password credentials and Google OAuth popups |
 | **Server Auth** | Firebase Admin SDK v14 | Cryptographic ID token and session cookie verification |
-| **Database** | Google Cloud Firestore | Structured persistence for user profiles and complaint records |
+| **Database** | Google Cloud Firestore | Structured persistence for user profiles, complaints, and audit logs |
 | **LLM Inference** | Groq API (`llama-3.3-70b-versatile`) | Fast JSON inference for extraction and operational summarization |
 | **Image CDN** | Cloudinary (Optional) | Secure server-signed client-side uploads (no Firebase Storage) |
 | **Validation** | Zod v4 | Runtime schema validation for all API routes, query params, and forms |
@@ -312,9 +316,21 @@ curl -X POST http://localhost:3000/api/seed
 ```
 
 ### Running Test Suite
-Execute the 28 unit tests covering Priority, Duplicate Detection, Hotspots, AI Fallback, and Validation:
+Execute the 29 unit tests covering Priority, Duplicate Detection, Hotspots, AI Fallback, Safety Floor, Validation, and Officer Resolution Workflow:
 ```bash
 npm test
+```
+
+### End-to-End User Journey Verification
+Validate the complete citizen intake → AI triage → officer review → officer assignment → resolution → citizen tracking loop:
+```bash
+node scratch/test_e2e_journey.cjs
+```
+
+### Responsive Verification Across 8 Viewports
+Validate zero horizontal overflow across 360px, 390px, 430px, 768px, 1024px, 1280px, 1440px, and 1920px:
+```bash
+node scratch/test_responsive.cjs
 ```
 
 ### Linting & Production Build
@@ -337,14 +353,15 @@ npm run build
 
 ---
 
-## 15. Current Limitations & Future Scope
+## 15. Production Scope & Future Roadmap
 
-| Area | Current Implementation (Phases 0–5) | Planned Evolution |
+| Area | Final Hackathon Implementation | Future Production Scope |
 | :--- | :--- | :--- |
-| **Maps & Spatial Views** | Exact coordinate capture, Haversine proximity calculations, and API centroid returns | Interactive Mapbox/Leaflet spatial choropleth map in the Reveal stage (Phase 6) |
-| **Department Triage** | Categorical routing and automated action brief generation | Live Officer dispatch queue with SLA timers and transition audit logs (Phase 7) |
-| **Multimodal Vision** | Secure Cloudinary photo uploads and image storage | Direct visual defect extraction via Groq Vision API |
-| **Citizen Notifications** | In-app ticket tracking and status indicators | Automated SMS and email notifications upon status progression |
+| **Authority Dashboard** | Fully functional `/officer` console with live metrics, category pills, search, filter, ticket drawer, assignment, and resolution | Real-time WebSocket / SSE live dispatch stream for multi-agent dispatch desks |
+| **Interactive Spatial Map** | Integrated Leaflet / OpenStreetMap Reveal map with color-coded priority markers, duplicate flags, and 250m hotspot overlays | 3D terrain elevation and satellite overlay views |
+| **Resolution Audit Trail** | Verified, immutable `status_events` tracking status changes, actor role, notes, and timestamps | On-chain municipal integrity ledger / public verifiable hashes |
+| **Citizen Experience** | Intake with location detection, real-time hazard warnings, assigned officer badges, and resolution notes banners | Multi-channel SMS and WhatsApp two-way dispatch notifications |
+| **Multimodal Vision** | Secure server-signed Cloudinary uploads with UI fallback | Direct visual defect extraction via Groq Vision API |
 
 ---
 

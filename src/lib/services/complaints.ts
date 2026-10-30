@@ -16,7 +16,7 @@
  * - Transparently stores explainable priority factor contributions.
  */
 
-import { Complaint, Category } from "@/types";
+import { Complaint, Category, Status, Role, StatusEvent } from "@/types";
 import { CreateComplaintInput } from "@/lib/validation/complaint";
 import { analyzeComplaintWithAi } from "@/lib/ai/groq";
 import {
@@ -27,9 +27,11 @@ import { calculatePriority } from "@/lib/engine/priority";
 import { SYNTHETIC_COMPLAINTS } from "@/lib/data/mock-complaints";
 import { getAdminFirestore, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { ComplaintCandidate } from "@/lib/validation/engine";
+import { CATEGORIES } from "@/lib/constants";
 
 // In-memory store for user submissions during local hackathon demo mode
 const inMemoryComplaints: Map<string, Complaint> = new Map();
+const inMemoryStatusEvents: Map<string, StatusEvent[]> = new Map();
 
 /**
  * Initializes the in-memory store with synthetic demo reports if empty.
@@ -260,4 +262,207 @@ export async function seedSyntheticDataset(): Promise<{ seededCount: number; isF
   }
 
   return { seededCount: SYNTHETIC_COMPLAINTS.length, isFirestore: false };
+}
+
+/**
+ * Retrieves a single complaint by its unique ID.
+ */
+export async function getComplaintById(id: string): Promise<Complaint | null> {
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const db = getAdminFirestore();
+      const doc = await db.collection("complaints").doc(id).get();
+      if (doc.exists) {
+        return doc.data() as Complaint;
+      }
+    } catch (err) {
+      console.warn(`Firestore getComplaintById failed for ${id}, checking local store:`, err);
+    }
+  }
+
+  ensureDemoStoreInitialized();
+  return inMemoryComplaints.get(id) || null;
+}
+
+/**
+ * Updates a complaint's status and/or assigned officer, recording a verified StatusEvent.
+ */
+export async function updateComplaint(
+  id: string,
+  updates: {
+    status?: Status;
+    assignedTo?: string;
+    note?: string;
+  },
+  actor: {
+    uid: string;
+    role: Role;
+  }
+): Promise<{ complaint: Complaint; event: StatusEvent }> {
+  ensureDemoStoreInitialized();
+  const existing = await getComplaintById(id);
+
+  if (!existing) {
+    throw new Error(`Complaint ${id} not found`);
+  }
+
+  const now = new Date().toISOString();
+  const oldStatus = existing.status;
+  const newStatus = updates.status || oldStatus;
+
+  // Build the audit event
+  const event: StatusEvent = {
+    id: `event_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    complaintId: id,
+    from: oldStatus === newStatus ? null : oldStatus,
+    to: newStatus,
+    actorUid: actor.uid,
+    actorRole: actor.role,
+    note: updates.note || undefined,
+    createdAt: now,
+  };
+
+  // Update complaint properties
+  const updatedComplaint: Complaint = {
+    ...existing,
+    status: newStatus,
+    assignedTo: updates.assignedTo !== undefined ? updates.assignedTo : existing.assignedTo,
+    resolutionNotes: updates.note !== undefined ? updates.note : existing.resolutionNotes,
+    updatedAt: now,
+  };
+
+  // 1. Persist to Firestore if configured
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const db = getAdminFirestore();
+      const batch = db.batch();
+      batch.update(db.collection("complaints").doc(id), {
+        status: updatedComplaint.status,
+        ...(updatedComplaint.assignedTo ? { assignedTo: updatedComplaint.assignedTo } : {}),
+        ...(updatedComplaint.resolutionNotes ? { resolutionNotes: updatedComplaint.resolutionNotes } : {}),
+        updatedAt: now,
+      });
+      batch.set(db.collection("status_events").doc(event.id), event);
+      await batch.commit();
+    } catch (err) {
+      console.warn("Firestore updateComplaint failed, updating local store:", err);
+    }
+  }
+
+  // 2. Always persist in in-memory demo store
+  inMemoryComplaints.set(id, updatedComplaint);
+
+  const existingEvents = inMemoryStatusEvents.get(id) || [];
+  inMemoryStatusEvents.set(id, [...existingEvents, event]);
+
+  return { complaint: updatedComplaint, event };
+}
+
+/**
+ * Retrieves the status progression history (audit trail) for a complaint.
+ */
+export async function getStatusEvents(complaintId: string): Promise<StatusEvent[]> {
+  if (isFirebaseAdminConfigured()) {
+    try {
+      const db = getAdminFirestore();
+      const snapshot = await db
+        .collection("status_events")
+        .where("complaintId", "==", complaintId)
+        .get();
+
+      if (!snapshot.empty) {
+        const events = snapshot.docs.map((doc) => doc.data() as StatusEvent);
+        events.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        return events;
+      }
+    } catch (err) {
+      console.warn(`Firestore getStatusEvents failed for ${complaintId}, checking local store:`, err);
+    }
+  }
+
+  const localEvents = inMemoryStatusEvents.get(complaintId) || [];
+  if (localEvents.length > 0) {
+    return localEvents;
+  }
+
+  // Synthesize initial submission event if none recorded yet
+  const complaint = inMemoryComplaints.get(complaintId);
+  if (complaint) {
+    const initialEvent: StatusEvent = {
+      id: `event_init_${complaintId}`,
+      complaintId,
+      from: null,
+      to: "submitted",
+      actorUid: complaint.reporterUid,
+      actorRole: "citizen",
+      note: "Initial complaint submitted via intake portal",
+      createdAt: complaint.createdAt,
+    };
+    return [initialEvent];
+  }
+
+  return [];
+}
+
+export interface ComplaintStats {
+  total: number;
+  critical: number;
+  high: number;
+  open: number;
+  resolved: number;
+  byCategory: Record<Category, number>;
+  byPriority: Record<string, number>;
+}
+
+/**
+ * Computes high-level distribution statistics across complaints.
+ */
+export async function getComplaintStats(): Promise<ComplaintStats> {
+  const all = await getComplaints({ limit: 500 });
+
+  const byCategory = CATEGORIES.reduce((acc, cat) => {
+    acc[cat] = 0;
+    return acc;
+  }, {} as Record<Category, number>);
+
+  const byPriority: Record<string, number> = {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+  };
+
+  let critical = 0;
+  let high = 0;
+  let open = 0;
+  let resolved = 0;
+
+  for (const c of all) {
+    if (byCategory[c.category] !== undefined) {
+      byCategory[c.category]++;
+    }
+    const prioLevel = c.priority?.level || "low";
+    byPriority[prioLevel] = (byPriority[prioLevel] || 0) + 1;
+
+    if (prioLevel === "critical") critical++;
+    if (prioLevel === "high") high++;
+
+    if (c.status === "resolved") {
+      resolved++;
+    } else if (c.status !== "rejected") {
+      open++;
+    }
+  }
+
+  return {
+    total: all.length,
+    critical,
+    high,
+    open,
+    resolved,
+    byCategory,
+    byPriority,
+  };
 }
