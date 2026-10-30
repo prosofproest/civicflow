@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User profiles collection
+    match /users/{userId} {
+      // Users can only read their own profile
+      allow read: if isOwner(userId);
+      
+      // User profile creation: must be the authenticated user and role must strictly be 'citizen'
+      allow create: if isOwner(userId) 
+                    && request.resource.data.uid == userId
+                    && request.resource.data.role == "citizen"
+                    && request.resource.data.active == true;
+                    
+      // User profile updates: Users can update displayName, but NEVER change role, active status, or uid
+      allow update: if isOwner(userId)
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.active == resource.data.active
+                    && request.resource.data.uid == resource.data.uid;
+                    
+      // Deletions are forbidden from client
+      allow delete: if false;
+    }
+
+    // Default deny for all other collections until explicitly authorized in later phases
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

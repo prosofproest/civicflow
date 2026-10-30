@@ -90,7 +90,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-3xl text-center space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 shadow-xs">
               <Sparkles className="h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
-              <span>PromptWars x ASTRA Hackathon — Phase 0 Foundation</span>
+              <span>PromptWars x ASTRA Hackathon — Phase 1 Authentication & RBAC</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
@@ -105,23 +105,20 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <Link href="/design">
+              <Link href="/register">
                 <Button size="lg" rightIcon={<ArrowRight className="h-4 w-4" />}>
-                  Explore Design System
+                  Citizen Registration
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                size="lg"
-                disabled
-                title="Intake portal launches in Phase 1"
-              >
-                Intake Portal (Phase 1)
-              </Button>
+              <Link href="/login">
+                <Button variant="outline" size="lg">
+                  Sign In
+                </Button>
+              </Link>
             </div>
 
             <p className="text-xs text-slate-400 pt-2">
-              Phase 0: Architecture, Design System Tokens, and Typed Foundation.
+              Phase 1: Firebase Authentication, User Profiles & Role-Based Access Control.
             </p>
           </div>
         </div>
