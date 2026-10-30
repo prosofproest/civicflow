@@ -5,9 +5,12 @@
  * Returns the trusted user profile and UID, preventing client-side spoofing.
  */
 
-import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
 import { getAdminAuth, getUserProfile, getOrCreateUserProfile, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { User } from "@/types";
+
+export interface CookieStoreLike {
+  get(name: string): { value: string } | undefined;
+}
 
 export interface ServerSessionResult {
   user: User | null;
@@ -15,7 +18,7 @@ export interface ServerSessionResult {
 }
 
 export async function getServerSessionUser(
-  cookieStore: ReadonlyRequestCookies
+  cookieStore: CookieStoreLike
 ): Promise<ServerSessionResult> {
   const sessionCookie = cookieStore.get("civicflow_session")?.value;
   const roleCookie = cookieStore.get("civicflow_role")?.value;
