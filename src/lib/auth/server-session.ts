@@ -28,10 +28,9 @@ export async function getServerSessionUser(
 
   // 1. Check for isolated demo mode session
   const isDemo =
-    modeCookie === "demo" ||
-    Boolean(demoRoleCookie) ||
     sessionCookie?.startsWith("demo_") === true ||
-    sessionCookie === "demo_token";
+    sessionCookie === "demo_token" ||
+    (!sessionCookie && modeCookie === "demo");
 
   if (isDemo) {
     const rawRole = demoRoleCookie || roleCookie;
