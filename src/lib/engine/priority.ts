@@ -192,8 +192,8 @@ export function calculatePriority(input: PriorityInput): PriorityCalculationResu
 
   // 4. Construct human-readable explanation
   let explanation = `Priority score calculated as ${finalScore}/100 (${level.toUpperCase()}). `;
-  if (safetyFloorApplied && matchedKeyword) {
-    explanation += `[SAFETY FLOOR ENFORCED: Critical hazard keyword "${matchedKeyword}" detected; safety score floored at ${SAFETY_FLOOR_FACTOR_SCORE} and final score elevated to minimum ${SAFETY_FLOOR_FINAL_SCORE}]. `;
+  if (matchedKeyword) {
+    explanation += `[SAFETY FLOOR ENFORCED: Critical hazard keyword "${matchedKeyword}" detected; safety factor floored at ${SAFETY_FLOOR_FACTOR_SCORE} and final score elevated to minimum ${SAFETY_FLOOR_FINAL_SCORE}]. `;
   }
   explanation += `Weighted breakdown: Safety (${clampedSafety} × 35% = ${safetyContribution}), Urgency (${clampedUrgency} × 25% = ${urgencyContribution}), Impact (${clampedImpact} × 25% = ${impactContribution}), Related Reports (${clampedRelated} × 15% = ${relatedContribution}, count: ${input.relatedCount || 0}).`;
 

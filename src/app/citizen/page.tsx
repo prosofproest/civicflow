@@ -12,6 +12,7 @@ import {
   Layers,
   ArrowRight,
   Info,
+  FileText,
 } from "lucide-react";
 import { PageShell } from "@/components/ui/PageShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
@@ -108,19 +109,38 @@ export default function CitizenPortalPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <Link href="/citizen/submit">
+                <Button variant="primary" className="w-full justify-start p-4 h-auto" leftIcon={<FileText className="h-5 w-5" />}>
+                  <div className="text-left">
+                    <span className="font-bold block text-sm">Report a Civic Issue</span>
+                    <span className="text-xs font-normal opacity-90 block">File waterlogging, road damage, or hazards</span>
+                  </div>
+                </Button>
+              </Link>
+              <Link href="/citizen/complaints">
+                <Button variant="outline" className="w-full justify-start p-4 h-auto" leftIcon={<Calendar className="h-5 w-5 text-blue-600" />}>
+                  <div className="text-left">
+                    <span className="font-bold block text-sm">Track My Complaints</span>
+                    <span className="text-xs font-normal text-slate-500 block">View AI triage, priority, and progress</span>
+                  </div>
+                </Button>
+              </Link>
+            </div>
+
             <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 text-xs text-blue-900 flex items-start gap-3">
               <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
               <div className="space-y-1 min-w-0 flex-1 break-words">
-                <span className="font-semibold block">Phase 1 Scope Notice</span>
+                <span className="font-semibold block">Phases 3–5 Active: AI Processing & Complaint Lifecycle</span>
                 <p className="text-blue-700 leading-relaxed">
-                  Authentication, session cookies, and role enforcement are active. In accordance with the hackathon roadmap, citizen complaint intake, GPS location pinning, and photo evidence uploads belong strictly to Phase 2.
+                  Groq AI categorization, deterministic 4-factor priority scoring, Jaccard duplicate detection, and 45-report synthetic demonstration records are operational.
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link href="/design">
-                <Button variant="outline" size="sm" leftIcon={<Layers className="h-3.5 w-3.5" />}>
+                <Button variant="ghost" size="sm" leftIcon={<Layers className="h-3.5 w-3.5" />}>
                   Explore Design Showcase
                 </Button>
               </Link>

@@ -15,6 +15,8 @@ export function isAdminConfigured(): boolean {
   );
 }
 
+export const isFirebaseAdminConfigured = isAdminConfigured;
+
 function getAdminApp(): App {
   if (adminApp) return adminApp;
 
@@ -68,6 +70,8 @@ export function getAdminDb(): Firestore {
   }
   return adminDb;
 }
+
+export const getAdminFirestore = getAdminDb;
 
 /**
  * Retrieves a user profile by UID from trusted Firestore.
