@@ -506,6 +506,7 @@ export default function DemoPage() {
           <div className="fixed inset-0 z-[99999] overflow-hidden">
             {/* Backdrop: Clicking closes drawer */}
             <div
+              data-testid="drawer-backdrop"
               className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity z-[99999] cursor-pointer"
               onClick={() => setSelectedComplaint(null)}
               aria-hidden="true"
