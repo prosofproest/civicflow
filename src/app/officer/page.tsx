@@ -8,7 +8,6 @@ import {
   LogOut,
   Mail,
   Calendar,
-  Layers,
   Info,
   CheckCircle,
 } from "lucide-react";
@@ -34,7 +33,7 @@ export default function OfficerPortalPage() {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 rounded-md bg-cyan-50 px-2.5 py-0.5 text-xs font-semibold text-cyan-800 border border-cyan-200 mb-1">
               <ShieldAlert className="h-3.5 w-3.5" />
-              <span>Phase 1 — Field Officer Portal</span>
+              <span>Field Officer Operations</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Officer Operations Desk
@@ -108,9 +107,9 @@ export default function OfficerPortalPage() {
             <div className="rounded-xl border border-cyan-200 bg-cyan-50/60 p-4 text-xs text-cyan-950 flex items-start gap-3">
               <Info className="h-4 w-4 text-cyan-700 shrink-0 mt-0.5" />
               <div className="space-y-1 min-w-0 flex-1 break-words">
-                <span className="font-semibold block">Field Triage Queue Scope Notice</span>
+                <span className="font-semibold block">Field Operations Workspace</span>
                 <p className="text-cyan-800 leading-relaxed">
-                  Officer role-based access control and session persistence are verified. Dispatch queues, SLA progression actions (`assigned` → `in_progress` → `resolved`), and spatial maps will activate in subsequent development phases.
+                  Verified officer clearance active. You are authorized to review assigned departmental complaints, track resolution SLA milestones, and coordinate municipal field response.
                 </p>
               </div>
             </div>
@@ -118,12 +117,12 @@ export default function OfficerPortalPage() {
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link href="/citizen">
                 <Button variant="outline" size="sm">
-                  View Citizen View
+                  Switch to Citizen View
                 </Button>
               </Link>
-              <Link href="/design">
-                <Button variant="ghost" size="sm" leftIcon={<Layers className="h-3.5 w-3.5" />}>
-                  Design System Showcase
+              <Link href="/citizen/complaints">
+                <Button variant="outline" size="sm">
+                  Review Complaint Feed
                 </Button>
               </Link>
             </div>

@@ -27,6 +27,9 @@ html {
   color-scheme: light;
   background-color: #ffffff;
   color: #1e293b;
+}
+
+html[data-scroll-behavior="smooth"] {
   scroll-behavior: smooth;
 }
 

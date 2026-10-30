@@ -34,6 +34,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${inter.variable} ${plusJakartaSans.variable} h-full`}
     >
       <body className="min-h-full flex flex-col font-sans bg-white text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">

@@ -8,7 +8,6 @@ import {
   LogOut,
   Mail,
   Calendar,
-  Layers,
   Info,
   CheckCircle2,
   Lock,
@@ -35,7 +34,7 @@ export default function AdminPortalPage() {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-800 border border-rose-200 mb-1">
               <Lock className="h-3.5 w-3.5" />
-              <span>Phase 1 — Municipal Administrator Portal</span>
+              <span>Municipal Administrator Console</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Administrative Control Console
@@ -109,9 +108,9 @@ export default function AdminPortalPage() {
             <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-4 text-xs text-rose-950 flex items-start gap-3">
               <Info className="h-4 w-4 text-rose-700 shrink-0 mt-0.5" />
               <div className="space-y-1 min-w-0 flex-1 break-words">
-                <span className="font-semibold block">Administrative Governance Scope Notice</span>
+                <span className="font-semibold block">Administrative Governance Console</span>
                 <p className="text-rose-800 leading-relaxed">
-                  Administrator role-based access control and token verification are enforced server-side. City-wide telemetry dashboards, automated clustering review, department routing, and officer promotion workflows belong to subsequent phases.
+                  Full municipal administrator authority active. You have oversight across all citizen submissions, deterministic priority calculations, geospatial duplicate groups, and field officer assignments.
                 </p>
               </div>
             </div>
@@ -127,9 +126,9 @@ export default function AdminPortalPage() {
                   Inspect Citizen Portal
                 </Button>
               </Link>
-              <Link href="/design">
-                <Button variant="ghost" size="sm" leftIcon={<Layers className="h-3.5 w-3.5" />}>
-                  Design System Showcase
+              <Link href="/citizen/complaints">
+                <Button variant="outline" size="sm">
+                  Audit Complaint Records
                 </Button>
               </Link>
             </div>

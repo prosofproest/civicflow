@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import {
-  Layers,
   ArrowRight,
   Camera,
   Cpu,
@@ -10,15 +9,16 @@ import {
   AlertTriangle,
   Clock,
   Sparkles,
-  TrendingUp,
-  FileCheck2,
   Users,
+  ShieldCheck,
+  MapPin,
+  Scale,
+  FileText,
 } from "lucide-react";
 import { PageShell } from "@/components/ui/PageShell";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { StatCard } from "@/components/ui/StatCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { siteConfig } from "@/config/site";
 
@@ -82,15 +82,42 @@ export default function HomePage() {
     },
   ];
 
+  const platformCapabilities = [
+    {
+      title: "Deterministic Priority Scoring",
+      description:
+        "Every complaint receives an explainable score (0–100) based on Safety (35%), Urgency (25%), Impact (25%), and Related Reports (15%) with an unyielding Safety Floor for immediate hazards.",
+      icon: <Scale className="h-5 w-5 text-blue-600" />,
+    },
+    {
+      title: "Geospatial Deduplication",
+      description:
+        "Combines Haversine distance within 150 metres and Jaccard text similarity to identify duplicate complaints automatically, eliminating backlogs while boosting priority via volume weighting.",
+      icon: <MapPin className="h-5 w-5 text-cyan-600" />,
+    },
+    {
+      title: "Resilient AI Analysis",
+      description:
+        "Extracts municipal categories, safety factors, and officer action briefs via high-speed language models with deterministic fallback to ensure uninterrupted 24/7 reliability.",
+      icon: <Cpu className="h-5 w-5 text-violet-600" />,
+    },
+    {
+      title: "Auditable Resolution Pipeline",
+      description:
+        "Clear status lifecycle from submitted to assigned, in progress, and verified resolved with complete transparency and role-governed access for citizens and officials.",
+      icon: <ShieldCheck className="h-5 w-5 text-emerald-600" />,
+    },
+  ];
+
   return (
     <PageShell>
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-slate-200/80 bg-linear-to-b from-blue-50/50 via-white to-white py-16 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 shadow-xs">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1 text-xs font-medium text-blue-700 shadow-xs">
               <Sparkles className="h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
-              <span>PromptWars x ASTRA Hackathon — Phase 1 Authentication & RBAC</span>
+              <span>Municipal Resolution & Action Engine</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
@@ -116,10 +143,6 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
-
-            <p className="text-xs text-slate-400 pt-2">
-              Phase 1: Firebase Authentication, User Profiles & Role-Based Access Control.
-            </p>
           </div>
         </div>
       </section>
@@ -253,77 +276,61 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Illustrative Telemetry (Sample Data) */}
-      <section className="py-16 sm:py-20 bg-slate-50/50">
+      {/* Platform Capabilities */}
+      <section className="py-16 sm:py-20 border-b border-slate-200/80 bg-slate-50/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeader
             badge={
-              <Badge variant="default" size="sm">
-                Sample Metrics
+              <Badge variant="primary" size="sm">
+                Engine Capabilities
               </Badge>
             }
-            title="Operational Telemetry Preview"
-            description="Illustrative metrics illustrating the target dashboard layout and triage throughput."
-            action={
-              <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                All numbers are Sample Data
-              </span>
-            }
+            title="Engineered for Civic Trust"
+            description="Core technologies that make CivicFlow fair, transparent, and operationally reliable for modern cities."
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <StatCard
-              label="Active Complaints"
-              value="1,248"
-              trend="down"
-              trendValue="-12%"
-              helperText="vs last week"
-              icon={<FileCheck2 className="h-5 w-5" />}
-              isSample={true}
-            />
-            <StatCard
-              label="Critical Hazards"
-              value="34"
-              trend="up"
-              trendValue="+4"
-              helperText="immediate dispatch"
-              icon={<AlertTriangle className="h-5 w-5 text-rose-600" />}
-              badge={<Badge variant="critical">Critical</Badge>}
-              isSample={true}
-            />
-            <StatCard
-              label="Clusters Identified"
-              value="182"
-              trend="neutral"
-              trendValue="94% auto"
-              helperText="duplicate savings"
-              icon={<Layers className="h-5 w-5 text-cyan-600" />}
-              isSample={true}
-            />
-            <StatCard
-              label="Median SLA Time"
-              value="4.2h"
-              trend="down"
-              trendValue="-1.8h"
-              helperText="time to resolution"
-              icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
-              badge={<Badge variant="resolved">Resolved</Badge>}
-              isSample={true}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {platformCapabilities.map((cap) => (
+              <div
+                key={cap.title}
+                className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs hover:border-slate-300 transition-all space-y-3"
+              >
+                <div className="inline-flex rounded-lg bg-slate-50 p-2.5 border border-slate-100">
+                  {cap.icon}
+                </div>
+                <h3 className="text-base font-bold text-slate-900">{cap.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">{cap.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Production Call-to-Action */}
+      <section className="py-16 sm:py-20 bg-linear-to-b from-white to-blue-50/40">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1 text-xs font-medium text-blue-700 shadow-xs">
+            <FileText className="h-3.5 w-3.5 text-blue-600" />
+            <span>Civic Action Starts Here</span>
           </div>
 
-          <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50/60 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h4 className="text-sm font-semibold text-blue-900">
-                Design System Preview Available
-              </h4>
-              <p className="text-xs text-blue-700">
-                Inspect typography, color tokens, button states, badges, inputs, and accessible states in the temporary showcase.
-              </p>
-            </div>
-            <Link href="/design" className="shrink-0">
-              <Button size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
-                View /design
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Ready to improve your neighborhood?
+          </h2>
+
+          <p className="text-base text-slate-600 max-w-xl mx-auto leading-relaxed">
+            Report street hazards, water supply outages, or sanitation issues in seconds. Every complaint is tracked, prioritized, and routed to verified municipal response teams.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link href="/register">
+              <Button size="lg" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                Create Citizen Account
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="outline" size="lg">
+                Sign In to Portal
               </Button>
             </Link>
           </div>

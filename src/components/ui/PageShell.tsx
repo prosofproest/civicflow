@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ShieldCheck, Layers, ExternalLink, LogOut, User as UserIcon } from "lucide-react";
+import { ShieldCheck, ExternalLink, LogOut, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -58,13 +58,6 @@ export const PageShell: React.FC<PageShellProps> = ({
               >
                 Overview
               </Link>
-              <Link
-                href="/design"
-                className="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
-              >
-                <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Design System</span>
-              </Link>
 
               {user ? (
                 <div className="flex items-center gap-1 sm:gap-2">
@@ -100,10 +93,6 @@ export const PageShell: React.FC<PageShellProps> = ({
                   </Link>
                 </div>
               )}
-
-              <span className="ml-1 sm:ml-2 hidden lg:inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 border border-slate-200">
-                Phase 1
-              </span>
             </nav>
           </div>
         </header>
@@ -122,7 +111,7 @@ export const PageShell: React.FC<PageShellProps> = ({
 
             <div className="flex flex-wrap items-center gap-4 text-center sm:text-right">
               <span className="text-slate-500">
-                Sample data used for illustrative previews.
+                Municipal Issue Resolution & Priority Triaging
               </span>
               <a
                 href={siteConfig.links.github}

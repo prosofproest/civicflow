@@ -9,7 +9,6 @@ import {
   Mail,
   Calendar,
   Shield,
-  Layers,
   ArrowRight,
   Info,
   FileText,
@@ -37,7 +36,7 @@ export default function CitizenPortalPage() {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200 mb-1">
               <Shield className="h-3.5 w-3.5" />
-              <span>Phase 1 — Citizen Role Portal</span>
+              <span>Citizen Portal</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Citizen Workspace
@@ -131,19 +130,14 @@ export default function CitizenPortalPage() {
             <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 text-xs text-blue-900 flex items-start gap-3">
               <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
               <div className="space-y-1 min-w-0 flex-1 break-words">
-                <span className="font-semibold block">Phases 3–5 Active: AI Processing & Complaint Lifecycle</span>
+                <span className="font-semibold block">Intelligent Municipal Intake</span>
                 <p className="text-blue-700 leading-relaxed">
-                  Groq AI categorization, deterministic 4-factor priority scoring, Jaccard duplicate detection, and 45-report synthetic demonstration records are operational.
+                  File civic issues with automated GPS detection, monitor AI category extraction, and track explainable priority scores as municipal officers act on your submissions.
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Link href="/design">
-                <Button variant="ghost" size="sm" leftIcon={<Layers className="h-3.5 w-3.5" />}>
-                  Explore Design Showcase
-                </Button>
-              </Link>
               <Link href="/">
                 <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
                   Return to Overview

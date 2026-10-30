@@ -67,10 +67,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               error && "border-rose-400 focus:ring-rose-500 focus:border-rose-500 text-rose-900",
               className
             )}
+            defaultValue={props.value === undefined ? (props.defaultValue ?? (placeholder ? "" : undefined)) : undefined}
             {...props}
           >
             {placeholder && (
-              <option value="" disabled selected hidden>
+              <option value="" disabled hidden>
                 {placeholder}
               </option>
             )}
