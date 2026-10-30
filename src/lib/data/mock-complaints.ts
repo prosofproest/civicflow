@@ -29,7 +29,7 @@ export const SYNTHETIC_COMPLAINTS: Complaint[] = [
   // =========================================================================
   {
     id: "rep_urgent_1",
-    reporterUid: "synthetic_citizen_01",
+    reporterUid: "demo_citizen_uid_123",
     text: "Dangerous live wire sparking from damaged utility pole near Primary School bus stop on 8th Cross. Children passing by.",
     category: "public_safety",
     aiCategory: "public_safety",
