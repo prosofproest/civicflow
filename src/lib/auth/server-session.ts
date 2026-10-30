@@ -71,6 +71,9 @@ export async function getServerSessionUser(
 
   try {
     const adminAuth = getAdminAuth();
+    if (!adminAuth) {
+      return { user: null, error: "Authentication service unavailable" };
+    }
     let uid: string | null = null;
 
     try {

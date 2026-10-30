@@ -67,23 +67,25 @@ async function getCandidateComplaints(): Promise<ComplaintCandidate[]> {
   if (isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
-      const snapshot = await db
-        .collection("complaints")
-        .where("status", "in", ["submitted", "under_review", "assigned", "in_progress"])
-        .limit(100)
-        .get();
+      if (db) {
+        const snapshot = await db
+          .collection("complaints")
+          .where("status", "in", ["submitted", "under_review", "assigned", "in_progress"])
+          .limit(100)
+          .get();
 
-      if (!snapshot.empty) {
-        return snapshot.docs.map((doc) => {
-          const data = doc.data() as Complaint;
-          return {
-            id: data.id || doc.id,
-            text: data.text,
-            location: data.location,
-            status: data.status,
-            createdAt: data.createdAt,
-          };
-        });
+        if (!snapshot.empty) {
+          return snapshot.docs.map((doc) => {
+            const data = doc.data() as Complaint;
+            return {
+              id: data.id || doc.id,
+              text: data.text,
+              location: data.location,
+              status: data.status,
+              createdAt: data.createdAt,
+            };
+          });
+        }
       }
     } catch (err) {
       console.warn("Firestore query failed, falling back to local store for duplicate candidate check:", err);
@@ -178,9 +180,15 @@ export async function createComplaint(
 
   // 6. Save to storage
   if (isFirebaseAdminConfigured()) {
-    const db = getAdminFirestore();
-    const firestoreData = sanitizeForFirestore(newComplaint as unknown as Record<string, unknown>);
-    await db.collection("complaints").doc(complaintId).set(firestoreData);
+    try {
+      const db = getAdminFirestore();
+      if (db) {
+        const firestoreData = sanitizeForFirestore(newComplaint as unknown as Record<string, unknown>);
+        await db.collection("complaints").doc(complaintId).set(firestoreData);
+      }
+    } catch (err) {
+      console.warn("Firestore save failed, falling back to local store:", err);
+    }
   }
 
   // Always retain in in-memory store for session continuity
@@ -204,7 +212,8 @@ export async function getComplaints(options?: {
   if (isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
-      let query: FirebaseFirestore.Query = db.collection("complaints");
+      if (db) {
+        let query: FirebaseFirestore.Query = db.collection("complaints");
 
       if (options?.reporterUid) {
         query = query.where("reporterUid", "==", options.reporterUid);
@@ -216,14 +225,15 @@ export async function getComplaints(options?: {
         query = query.where("status", "==", options.status);
       }
 
-      const snapshot = await query.limit(maxLimit).get();
-      if (!snapshot.empty) {
-        const results = snapshot.docs.map((doc) => doc.data() as Complaint);
-        // Sort descending by creation date
-        results.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        return results;
+        const snapshot = await query.limit(maxLimit).get();
+        if (!snapshot.empty) {
+          const results = snapshot.docs.map((doc) => doc.data() as Complaint);
+          // Sort descending by creation date
+          results.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          return results;
+        }
       }
     } catch (err) {
       console.warn("Firestore query failed, serving from local store:", err);
@@ -260,15 +270,17 @@ export async function seedSyntheticDataset(): Promise<{ seededCount: number; isF
   if (isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
-      const batch = db.batch();
+      if (db) {
+        const batch = db.batch();
 
-      for (const report of SYNTHETIC_COMPLAINTS) {
-        const docRef = db.collection("complaints").doc(report.id);
-        batch.set(docRef, report, { merge: true });
+        for (const report of SYNTHETIC_COMPLAINTS) {
+          const docRef = db.collection("complaints").doc(report.id);
+          batch.set(docRef, report, { merge: true });
+        }
+
+        await batch.commit();
+        return { seededCount: SYNTHETIC_COMPLAINTS.length, isFirestore: true };
       }
-
-      await batch.commit();
-      return { seededCount: SYNTHETIC_COMPLAINTS.length, isFirestore: true };
     } catch (err) {
       console.warn("Failed to batch seed into Firestore, populated in-memory store:", err);
     }
@@ -284,9 +296,11 @@ export async function getComplaintById(id: string): Promise<Complaint | null> {
   if (isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
-      const doc = await db.collection("complaints").doc(id).get();
-      if (doc.exists) {
-        return doc.data() as Complaint;
+      if (db) {
+        const doc = await db.collection("complaints").doc(id).get();
+        if (doc.exists) {
+          return doc.data() as Complaint;
+        }
       }
     } catch (err) {
       console.warn(`Firestore getComplaintById failed for ${id}, checking local store:`, err);
@@ -346,21 +360,27 @@ export async function updateComplaint(
 
   // 1. Persist to Firestore if configured
   if (isFirebaseAdminConfigured()) {
-    const db = getAdminFirestore();
-    const batch = db.batch();
-    const updatesData: Record<string, unknown> = {
-      status: updatedComplaint.status,
-      updatedAt: now,
-    };
-    if (updatedComplaint.assignedTo) updatesData.assignedTo = updatedComplaint.assignedTo;
-    if (updatedComplaint.resolutionNotes) updatesData.resolutionNotes = updatedComplaint.resolutionNotes;
+    try {
+      const db = getAdminFirestore();
+      if (db) {
+        const batch = db.batch();
+        const updatesData: Record<string, unknown> = {
+          status: updatedComplaint.status,
+          updatedAt: now,
+        };
+        if (updatedComplaint.assignedTo) updatesData.assignedTo = updatedComplaint.assignedTo;
+        if (updatedComplaint.resolutionNotes) updatesData.resolutionNotes = updatedComplaint.resolutionNotes;
 
-    batch.update(db.collection("complaints").doc(id), updatesData);
-    batch.set(
-      db.collection("status_events").doc(event.id),
-      sanitizeForFirestore(event as unknown as Record<string, unknown>)
-    );
-    await batch.commit();
+        batch.set(db.collection("complaints").doc(id), updatesData, { merge: true });
+        batch.set(
+          db.collection("status_events").doc(event.id),
+          sanitizeForFirestore(event as unknown as Record<string, unknown>)
+        );
+        await batch.commit();
+      }
+    } catch (err) {
+      console.warn("Firestore updateComplaint failed, falling back to local store:", err);
+    }
   }
 
   // 2. Always persist in in-memory demo store
@@ -379,17 +399,19 @@ export async function getStatusEvents(complaintId: string): Promise<StatusEvent[
   if (isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
-      const snapshot = await db
-        .collection("status_events")
-        .where("complaintId", "==", complaintId)
-        .get();
+      if (db) {
+        const snapshot = await db
+          .collection("status_events")
+          .where("complaintId", "==", complaintId)
+          .get();
 
-      if (!snapshot.empty) {
-        const events = snapshot.docs.map((doc) => doc.data() as StatusEvent);
-        events.sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-        return events;
+        if (!snapshot.empty) {
+          const events = snapshot.docs.map((doc) => doc.data() as StatusEvent);
+          events.sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+          return events;
+        }
       }
     } catch (err) {
       console.warn(`Firestore getStatusEvents failed for ${complaintId}, checking local store:`, err);

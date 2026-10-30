@@ -17,7 +17,7 @@ export function isAdminConfigured(): boolean {
 
 export const isFirebaseAdminConfigured = isAdminConfigured;
 
-function getAdminApp(): App {
+function getAdminApp(): App | null {
   if (adminApp) return adminApp;
 
   if (getApps().length > 0) {
@@ -37,39 +37,60 @@ function getAdminApp(): App {
   }
 
   if (clientEmail && privateKey) {
-    adminApp = initializeApp({
-      credential: cert({
+    try {
+      adminApp = initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
         projectId,
-        clientEmail,
-        privateKey,
-      }),
-      projectId,
-    });
-  } else {
+      });
+      return adminApp;
+    } catch (err) {
+      console.warn("Failed to initialize Firebase Admin with credentials:", err);
+    }
+  }
+
+  try {
     // Fallback initialize for environments with Google ADC or graceful build fallback
     adminApp = initializeApp({
       projectId: projectId || "civicflow-local",
     });
+    return adminApp;
+  } catch (err) {
+    console.warn("Fallback initializeApp failed:", err);
+    return null;
   }
-
-  return adminApp;
 }
 
-export function getAdminAuth(): Auth {
-  if (!adminAuth) {
-    const app = getAdminApp();
-    adminAuth = getAuth(app);
+export function getAdminAuth(): Auth | null {
+  try {
+    if (!adminAuth) {
+      const app = getAdminApp();
+      if (!app) return null;
+      adminAuth = getAuth(app);
+    }
+    return adminAuth;
+  } catch (err) {
+    console.warn("getAdminAuth unavailable:", err);
+    return null;
   }
-  return adminAuth;
 }
 
-export function getAdminDb(): Firestore {
-  if (!adminDb) {
-    const app = getAdminApp();
-    adminDb = getFirestore(app);
-    adminDb.settings({ ignoreUndefinedProperties: true });
+export function getAdminDb(): Firestore | null {
+  try {
+    if (!adminDb) {
+      const app = getAdminApp();
+      if (!app) return null;
+      adminDb = getFirestore(app);
+      adminDb.settings({ ignoreUndefinedProperties: true });
+    }
+    return adminDb;
+  } catch (err) {
+    console.warn("getAdminDb unavailable:", err);
+    return null;
   }
-  return adminDb;
 }
 
 export const getAdminFirestore = getAdminDb;
@@ -79,14 +100,21 @@ export const getAdminFirestore = getAdminDb;
  */
 export async function getUserProfile(uid: string): Promise<User | null> {
   const db = getAdminDb();
-  const docRef = db.collection("users").doc(uid);
-  const snap = await docRef.get();
+  if (!db) return null;
 
-  if (!snap.exists) {
+  try {
+    const docRef = db.collection("users").doc(uid);
+    const snap = await docRef.get();
+
+    if (!snap.exists) {
+      return null;
+    }
+
+    return snap.data() as User;
+  } catch (err) {
+    console.warn("Firestore getUserProfile failed:", err);
     return null;
   }
-
-  return snap.data() as User;
 }
 
 /**
@@ -100,15 +128,6 @@ export async function getOrCreateUserProfile(
   email: string,
   displayName?: string
 ): Promise<User> {
-  const db = getAdminDb();
-  const docRef = db.collection("users").doc(uid);
-  const snap = await docRef.get();
-
-  if (snap.exists) {
-    const existing = snap.data() as User;
-    return existing;
-  }
-
   const cleanEmail = email.trim().toLowerCase();
   const resolvedDisplayName =
     displayName?.trim() || cleanEmail.split("@")[0] || "Citizen";
@@ -122,6 +141,23 @@ export async function getOrCreateUserProfile(
     createdAt: new Date().toISOString(),
   };
 
-  await docRef.set(newUser);
-  return newUser;
+  const db = getAdminDb();
+  if (!db) {
+    return newUser;
+  }
+
+  try {
+    const docRef = db.collection("users").doc(uid);
+    const snap = await docRef.get();
+
+    if (snap.exists) {
+      return snap.data() as User;
+    }
+
+    await docRef.set(newUser);
+    return newUser;
+  } catch (err) {
+    console.warn("getOrCreateUserProfile Firestore write failed:", err);
+    return newUser;
+  }
 }

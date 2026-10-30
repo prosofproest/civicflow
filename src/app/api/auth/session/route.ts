@@ -20,6 +20,12 @@ export async function POST(req: NextRequest) {
 
     const { idToken } = parsed.data;
     const adminAuth = getAdminAuth();
+    if (!adminAuth) {
+      return NextResponse.json(
+        { error: "Authentication service is currently unavailable" },
+        { status: 503 }
+      );
+    }
 
     let decodedToken;
     try {
