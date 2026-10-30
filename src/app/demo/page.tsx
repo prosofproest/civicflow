@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+const emptySubscribe = () => () => {};
+function useMounted() {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
 import {
   ShieldAlert,
   Search,
@@ -57,6 +63,21 @@ export default function DemoPage() {
   const [complaints] = useState<Complaint[]>(SYNTHETIC_COMPLAINTS);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [viewMode, setViewMode] = useState<"map" | "table">("map");
+  const mounted = useMounted();
+
+  useEffect(() => {
+    if (!selectedComplaint) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedComplaint(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [selectedComplaint]);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -399,6 +420,7 @@ export default function DemoPage() {
               <div className="p-0">
                 <ComplaintMap
                   complaints={filteredComplaints}
+                  selectedId={selectedComplaint?.id}
                   onSelectComplaint={selectComplaint}
                 />
               </div>
@@ -480,142 +502,160 @@ export default function DemoPage() {
         )}
 
         {/* Read-Only Slide-Over Complaint Inspection Drawer */}
-        {selectedComplaint && (
-          <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-xs flex justify-end">
-            <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col overflow-y-auto">
-              <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-semibold text-slate-500">
-                    {selectedComplaint.id}
-                  </span>
-                  <Badge variant="primary" size="sm">
-                    {CATEGORY_LABELS[selectedComplaint.category]}
-                  </Badge>
-                </div>
-                <button
-                  onClick={() => setSelectedComplaint(null)}
-                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        {mounted && selectedComplaint && createPortal(
+          <div className="fixed inset-0 z-[99999] overflow-hidden">
+            {/* Backdrop: Clicking closes drawer */}
+            <div
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity z-[99999] cursor-pointer"
+              onClick={() => setSelectedComplaint(null)}
+              aria-hidden="true"
+            />
 
-              <div className="p-6 space-y-6 flex-1">
-                {/* Priority Banner */}
-                <div
-                  className={`p-4 rounded-xl border flex items-center justify-between ${
-                    selectedComplaint.priority?.level === "critical"
-                      ? "bg-rose-50 border-rose-200 text-rose-900"
-                      : selectedComplaint.priority?.level === "high"
-                      ? "bg-amber-50 border-amber-200 text-amber-900"
-                      : selectedComplaint.priority?.level === "medium"
-                      ? "bg-blue-50 border-blue-200 text-blue-900"
-                      : "bg-slate-50 border-slate-200 text-slate-900"
-                  }`}
-                >
-                  <div>
-                    <span className="text-xs uppercase font-bold tracking-wider">
-                      Priority Level: {selectedComplaint.priority?.level.toUpperCase()}
+            {/* Slide-over panel container: aligned to right, responsive full-width on mobile */}
+            <div className="fixed inset-y-0 right-0 z-[100000] flex max-w-full pointer-events-none pl-0 sm:pl-10">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="demo-ticket-review-title"
+                onClick={(e) => e.stopPropagation()}
+                className="pointer-events-auto w-screen max-w-full sm:max-w-md md:max-w-lg bg-white h-full shadow-2xl flex flex-col overflow-y-auto animate-in slide-in-from-right duration-200"
+              >
+                <div className="sticky top-0 z-10 p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/95 backdrop-blur-xs">
+                  <div className="flex items-center gap-2">
+                    <span id="demo-ticket-review-title" className="font-mono text-xs font-semibold text-slate-500">
+                      {selectedComplaint.id}
                     </span>
-                    <p className="text-xs mt-0.5 opacity-90">
-                      Calculated deterministic score: {selectedComplaint.priority?.score}/100
-                    </p>
+                    <Badge variant="primary" size="sm">
+                      {CATEGORY_LABELS[selectedComplaint.category]}
+                    </Badge>
                   </div>
-                  <div className="text-2xl font-black">{selectedComplaint.priority?.score}</div>
+                  <button
+                    onClick={() => setSelectedComplaint(null)}
+                    aria-label="Close complaint inspection drawer"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
 
-                {/* Complaint Summary */}
-                <div className="space-y-1">
-                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Citizen Narrative
-                  </span>
-                  <p className="text-sm text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    {selectedComplaint.text}
-                  </p>
-                </div>
+                <div className="p-6 space-y-6 flex-1">
+                  {/* Priority Banner */}
+                  <div
+                    className={`p-4 rounded-xl border flex items-center justify-between ${
+                      selectedComplaint.priority?.level === "critical"
+                        ? "bg-rose-50 border-rose-200 text-rose-900"
+                        : selectedComplaint.priority?.level === "high"
+                        ? "bg-amber-50 border-amber-200 text-amber-900"
+                        : selectedComplaint.priority?.level === "medium"
+                        ? "bg-blue-50 border-blue-200 text-blue-900"
+                        : "bg-slate-50 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <div>
+                      <span className="text-xs uppercase font-bold tracking-wider">
+                        Priority Level: {selectedComplaint.priority?.level.toUpperCase()}
+                      </span>
+                      <p className="text-xs mt-0.5 opacity-90">
+                        Calculated deterministic score: {selectedComplaint.priority?.score}/100
+                      </p>
+                    </div>
+                    <div className="text-2xl font-black">{selectedComplaint.priority?.score}</div>
+                  </div>
 
-                {/* Location */}
-                <div className="space-y-1">
-                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Geographic Coordinates
-                  </span>
-                  <p className="text-xs font-mono text-slate-700 flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-blue-600" />
-                    <span>{selectedComplaint.location.address || "Astra Metropolitan Zone"}</span>
-                    <span className="text-slate-400">
-                      ({selectedComplaint.location.lat.toFixed(5)}, {selectedComplaint.location.lng.toFixed(5)})
-                    </span>
-                  </p>
-                </div>
-
-                {/* AI Triage Brief */}
-                {selectedComplaint.summary && (
+                  {/* Complaint Summary */}
                   <div className="space-y-1">
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      AI Triage Brief
+                      Citizen Narrative
                     </span>
-                    <p className="text-xs text-slate-700 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
-                      {selectedComplaint.summary}
+                    <p className="text-sm text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200">
+                      {selectedComplaint.text}
                     </p>
                   </div>
-                )}
 
-                {/* Deterministic Factor Weights */}
-                {selectedComplaint.priority?.factors && (
-                  <div className="space-y-2">
+                  {/* Location */}
+                  <div className="space-y-1">
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Priority Factor Contributions
+                      Geographic Coordinates
                     </span>
-                    <div className="space-y-1.5">
-                      {selectedComplaint.priority.factors.map((f) => (
-                        <div key={f.key} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-md">
-                          <span className="text-slate-600 font-medium">{f.label} ({Math.round(f.weight * 100)}%)</span>
-                          <span className="font-mono font-semibold text-slate-900">
-                            {f.input} → +{f.contribution.toFixed(1)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Duplicate Notification */}
-                {selectedComplaint.duplicate?.ofId && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-900 space-y-1">
-                    <span className="font-semibold block">Linked Duplicate Reference</span>
-                    <p>
-                      Matched candidate {selectedComplaint.duplicate.ofId} with confidence{" "}
-                      {Math.round((selectedComplaint.duplicate.score || 0) * 100)}%. Ticket is preserved without data loss.
+                    <p className="text-xs font-mono text-slate-700 flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                      <span>{selectedComplaint.location.address || "Astra Metropolitan Zone"}</span>
+                      <span className="text-slate-400">
+                        ({selectedComplaint.location.lat.toFixed(5)}, {selectedComplaint.location.lng.toFixed(5)})
+                      </span>
                     </p>
                   </div>
-                )}
 
-                {/* Resolution Workflow Notice */}
-                <div className="p-4 bg-slate-100 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2">
-                  <span className="font-semibold text-slate-800 block">Authority Resolution Actions</span>
-                  <p>
-                    In this read-only public demo, tickets are displayed for spatial audit. To test assigning officers, updating status, or submitting resolution notes, enter the <strong>Officer Desk</strong>.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    className="w-full justify-center"
-                    onClick={async () => {
-                      await fetch("/api/auth/demo", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ role: "officer" }),
-                      });
-                      router.push("/officer");
-                    }}
-                    rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
-                  >
-                    Enter Officer Desk
-                  </Button>
+                  {/* AI Triage Brief */}
+                  {selectedComplaint.summary && (
+                    <div className="space-y-1">
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        AI Triage Brief
+                      </span>
+                      <p className="text-xs text-slate-700 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                        {selectedComplaint.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Deterministic Factor Weights */}
+                  {selectedComplaint.priority?.factors && (
+                    <div className="space-y-2">
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        Priority Factor Contributions
+                      </span>
+                      <div className="space-y-1.5">
+                        {selectedComplaint.priority.factors.map((f) => (
+                          <div key={f.key} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-md">
+                            <span className="text-slate-600 font-medium">{f.label} ({Math.round(f.weight * 100)}%)</span>
+                            <span className="font-mono font-semibold text-slate-900">
+                              {f.input} → +{f.contribution.toFixed(1)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Duplicate Notification */}
+                  {selectedComplaint.duplicate?.ofId && (
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-900 space-y-1">
+                      <span className="font-semibold block">Linked Duplicate Reference</span>
+                      <p>
+                        Matched candidate {selectedComplaint.duplicate.ofId} with confidence{" "}
+                        {Math.round((selectedComplaint.duplicate.score || 0) * 100)}%. Ticket is preserved without data loss.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Resolution Workflow Notice */}
+                  <div className="p-4 bg-slate-100 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2">
+                    <span className="font-semibold text-slate-800 block">Authority Resolution Actions</span>
+                    <p>
+                      In this read-only public demo, tickets are displayed for spatial audit. To test assigning officers, updating status, or submitting resolution notes, enter the <strong>Officer Desk</strong>.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      className="w-full justify-center"
+                      onClick={async () => {
+                        await fetch("/api/auth/demo", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ role: "officer" }),
+                        });
+                        router.push("/officer");
+                      }}
+                      rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
+                    >
+                      Enter Officer Desk
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </PageShell>

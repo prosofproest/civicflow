@@ -223,10 +223,10 @@ export const ComplaintMap: React.FC<ComplaintMapProps> = ({
   }
 
   return (
-    <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-xs bg-slate-100">
-      <div ref={mapContainerRef} className={className} />
+    <div className="relative isolate z-0 rounded-xl overflow-hidden border border-slate-200 shadow-xs bg-slate-100">
+      <div ref={mapContainerRef} className={`${className} z-0`} />
       {/* Legend Overlay */}
-      <div className="absolute bottom-2 left-2 z-[1000] bg-white/95 backdrop-blur-xs p-2 rounded-lg border border-slate-200 shadow-xs text-[10px] space-y-1">
+      <div className="absolute bottom-2 left-2 z-10 bg-white/95 backdrop-blur-xs p-2 rounded-lg border border-slate-200 shadow-xs text-[10px] space-y-1 pointer-events-auto">
         <span className="font-semibold text-slate-700 block">Priority Map Legend</span>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>

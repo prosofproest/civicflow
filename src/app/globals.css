@@ -44,3 +44,43 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
+
+/* Leaflet map containment & stacking context bounds */
+.leaflet-container {
+  z-index: 0 !important;
+  font-family: inherit;
+}
+
+.leaflet-pane {
+  z-index: 10 !important;
+}
+
+.leaflet-tile-pane {
+  z-index: 1 !important;
+}
+
+.leaflet-overlay-pane {
+  z-index: 15 !important;
+}
+
+.leaflet-shadow-pane {
+  z-index: 20 !important;
+}
+
+.leaflet-marker-pane {
+  z-index: 25 !important;
+}
+
+.leaflet-tooltip-pane {
+  z-index: 30 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 35 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 40 !important;
+}
+

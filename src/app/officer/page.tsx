@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+
+const emptySubscribe = () => () => {};
+function useMounted() {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
 import {
   ShieldAlert,
   LogOut,
@@ -58,6 +64,26 @@ export default function OfficerPortalPage() {
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [statusEvents, setStatusEvents] = useState<StatusEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const mounted = useMounted();
+
+  // Lock body scroll and close on Escape key when drawer is active
+  useEffect(() => {
+    if (!selectedComplaint) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedComplaint(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedComplaint]);
 
   // Officer Action Form State
   const [actionStatus, setActionStatus] = useState<Status>("assigned");
@@ -699,34 +725,51 @@ export default function OfficerPortalPage() {
         )}
 
         {/* Selected Complaint Inspection & Action Drawer (Act) */}
-        {selectedComplaint && (
-          <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-xs flex justify-end">
-            <div className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col overflow-y-auto">
-              {/* Drawer Header */}
-              <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-slate-500">
-                      {selectedComplaint.id}
-                    </span>
-                    {selectedComplaint.isSynthetic && (
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase bg-purple-50 text-purple-700 border border-purple-200">
-                        Sample data
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    {CATEGORY_LABELS[selectedComplaint.category]} Ticket Review
-                  </h2>
-                </div>
+        {mounted && selectedComplaint && createPortal(
+          <div className="fixed inset-0 z-[99999] overflow-hidden">
+            {/* Backdrop: Clicking closes the drawer */}
+            <div
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity z-[99999] cursor-pointer"
+              onClick={() => setSelectedComplaint(null)}
+              aria-hidden="true"
+            />
 
-                <button
-                  onClick={() => setSelectedComplaint(null)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+            {/* Slide-over panel container: aligned to right, responsive full-width on mobile */}
+            <div className="fixed inset-y-0 right-0 z-[100000] flex max-w-full pointer-events-none pl-0 sm:pl-10">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="ticket-review-title"
+                onClick={(e) => e.stopPropagation()}
+                className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl bg-white h-full shadow-2xl flex flex-col overflow-y-auto animate-in slide-in-from-right duration-200"
+              >
+                {/* Drawer Header */}
+                <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-xs border-b border-slate-200 px-5 sm:px-6 py-4 flex items-center justify-between">
+                  <div className="space-y-0.5 min-w-0 pr-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-slate-500 select-all truncate" title={selectedComplaint.id}>
+                        {selectedComplaint.id}
+                      </span>
+                      {selectedComplaint.isSynthetic && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                          Sample data
+                        </span>
+                      )}
+                    </div>
+                    <h2 id="ticket-review-title" className="text-base sm:text-lg font-bold text-slate-900 truncate">
+                      {CATEGORY_LABELS[selectedComplaint.category]} Ticket Review
+                    </h2>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedComplaint(null)}
+                    aria-label="Close ticket review drawer"
+                    className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
 
               {/* Drawer Body */}
               <div className="p-6 space-y-6 flex-1 text-xs">
@@ -961,7 +1004,9 @@ export default function OfficerPortalPage() {
               </div>
             </div>
           </div>
-        )}
+        </div>,
+        document.body
+      )}
       </div>
     </PageShell>
   );
