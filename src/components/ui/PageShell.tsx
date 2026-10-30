@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ShieldCheck, ExternalLink, LogOut, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
@@ -18,6 +19,7 @@ export const PageShell: React.FC<PageShellProps> = ({
   className,
   hideNav = false,
 }) => {
+  const router = useRouter();
   const { user, logout } = useAuth();
 
   const getPortalLink = () => {
@@ -54,13 +56,70 @@ export const PageShell: React.FC<PageShellProps> = ({
             <nav className="flex items-center gap-1 sm:gap-2 shrink-0">
               <Link
                 href="/"
-                className="hidden sm:inline-flex px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+                className="hidden md:inline-flex px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
               >
                 Overview
               </Link>
 
+              <Link
+                href="/demo"
+                className="inline-flex px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 rounded-md transition-colors"
+              >
+                Demo Map
+              </Link>
+
               {user ? (
                 <div className="flex items-center gap-1 sm:gap-2">
+                  {user.uid.startsWith("demo_") && (
+                    <div className="hidden sm:inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                      <button
+                        onClick={async () => {
+                          await fetch("/api/auth/demo", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ role: "citizen" }),
+                          });
+                          router.push("/citizen");
+                        }}
+                        className={`px-2 py-1 rounded-md font-medium transition-all ${
+                          user.role === "citizen" ? "bg-white text-blue-700 shadow-2xs font-semibold" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Citizen
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await fetch("/api/auth/demo", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ role: "officer" }),
+                          });
+                          router.push("/officer");
+                        }}
+                        className={`px-2 py-1 rounded-md font-medium transition-all ${
+                          user.role === "officer" ? "bg-white text-blue-700 shadow-2xs font-semibold" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Officer
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await fetch("/api/auth/demo", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ role: "admin" }),
+                          });
+                          router.push("/admin");
+                        }}
+                        className={`px-2 py-1 rounded-md font-medium transition-all ${
+                          user.role === "admin" ? "bg-white text-blue-700 shadow-2xs font-semibold" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Admin
+                      </button>
+                    </div>
+                  )}
+
                   <Link
                     href={getPortalLink()}
                     className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors border border-slate-200"

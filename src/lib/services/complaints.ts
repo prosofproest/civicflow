@@ -34,6 +34,22 @@ const inMemoryComplaints: Map<string, Complaint> = new Map();
 const inMemoryStatusEvents: Map<string, StatusEvent[]> = new Map();
 
 /**
+ * Strips undefined properties before writing to Firestore.
+ */
+function sanitizeForFirestore(data: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      result[key] = sanitizeForFirestore(value as Record<string, unknown>);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
  * Initializes the in-memory store with synthetic demo reports if empty.
  */
 function ensureDemoStoreInitialized() {
@@ -133,7 +149,7 @@ export async function createComplaint(
     id: complaintId,
     reporterUid,
     text: input.text,
-    imageUrl: input.imageUrl || undefined,
+    ...(input.imageUrl && input.imageUrl.trim().length > 0 ? { imageUrl: input.imageUrl.trim() } : {}),
     category: input.category,
     aiCategory: analysis.category,
     summary: analysis.summary,
@@ -162,12 +178,9 @@ export async function createComplaint(
 
   // 6. Save to storage
   if (isFirebaseAdminConfigured()) {
-    try {
-      const db = getAdminFirestore();
-      await db.collection("complaints").doc(complaintId).set(newComplaint);
-    } catch (err) {
-      console.warn("Failed to persist to Firestore, saving in-memory:", err);
-    }
+    const db = getAdminFirestore();
+    const firestoreData = sanitizeForFirestore(newComplaint as unknown as Record<string, unknown>);
+    await db.collection("complaints").doc(complaintId).set(firestoreData);
   }
 
   // Always retain in in-memory store for session continuity
@@ -333,20 +346,21 @@ export async function updateComplaint(
 
   // 1. Persist to Firestore if configured
   if (isFirebaseAdminConfigured()) {
-    try {
-      const db = getAdminFirestore();
-      const batch = db.batch();
-      batch.update(db.collection("complaints").doc(id), {
-        status: updatedComplaint.status,
-        ...(updatedComplaint.assignedTo ? { assignedTo: updatedComplaint.assignedTo } : {}),
-        ...(updatedComplaint.resolutionNotes ? { resolutionNotes: updatedComplaint.resolutionNotes } : {}),
-        updatedAt: now,
-      });
-      batch.set(db.collection("status_events").doc(event.id), event);
-      await batch.commit();
-    } catch (err) {
-      console.warn("Firestore updateComplaint failed, updating local store:", err);
-    }
+    const db = getAdminFirestore();
+    const batch = db.batch();
+    const updatesData: Record<string, unknown> = {
+      status: updatedComplaint.status,
+      updatedAt: now,
+    };
+    if (updatedComplaint.assignedTo) updatesData.assignedTo = updatedComplaint.assignedTo;
+    if (updatedComplaint.resolutionNotes) updatesData.resolutionNotes = updatedComplaint.resolutionNotes;
+
+    batch.update(db.collection("complaints").doc(id), updatesData);
+    batch.set(
+      db.collection("status_events").doc(event.id),
+      sanitizeForFirestore(event as unknown as Record<string, unknown>)
+    );
+    await batch.commit();
   }
 
   // 2. Always persist in in-memory demo store

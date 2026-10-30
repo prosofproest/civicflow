@@ -12,6 +12,8 @@ import {
   AlertCircle,
   ArrowRight,
   Info,
+  User as UserIcon,
+  SlidersHorizontal,
 } from "lucide-react";
 import { PageShell } from "@/components/ui/PageShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
@@ -34,6 +36,33 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [selectedDemoRole, setSelectedDemoRole] = useState<"citizen" | "officer" | "admin">("citizen");
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+
+  const handleExploreDemo = async () => {
+    setIsDemoLoading(true);
+    try {
+      const res = await fetch("/api/auth/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: selectedDemoRole }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        if (selectedDemoRole === "admin") {
+          router.push("/admin");
+        } else if (selectedDemoRole === "officer") {
+          router.push("/officer");
+        } else {
+          router.push("/citizen");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to switch demo role:", err);
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
 
   const routeUserByRole = (role: string) => {
     if (redirectPath && redirectPath.startsWith("/")) {
@@ -135,6 +164,69 @@ function LoginForm() {
               </div>
             </div>
           )}
+
+          {/* PRIORITY 2: Unified Demo Role Selector */}
+          <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                Instant Demo Mode
+              </span>
+              <span className="text-[11px] font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                Zero Credentials
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-white rounded-lg border border-blue-200/80 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setSelectedDemoRole("citizen")}
+                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-semibold transition-all ${
+                  selectedDemoRole === "citizen"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                <UserIcon className="h-3.5 w-3.5" />
+                <span>Citizen</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDemoRole("officer")}
+                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-semibold transition-all ${
+                  selectedDemoRole === "officer"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Officer</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDemoRole("admin")}
+                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-semibold transition-all ${
+                  selectedDemoRole === "admin"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                <span>Admin</span>
+              </button>
+            </div>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              className="w-full justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs"
+              isLoading={isDemoLoading}
+              onClick={handleExploreDemo}
+              rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
+            >
+              Explore Demo as {selectedDemoRole.charAt(0).toUpperCase() + selectedDemoRole.slice(1)}
+            </Button>
+          </div>
 
           <Card className="shadow-sm">
             <CardHeader className="space-y-1">

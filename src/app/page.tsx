@@ -132,13 +132,18 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <Link href="/register">
+              <Link href="/demo">
                 <Button size="lg" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                  Explore Demo
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button variant="outline" size="lg">
                   Citizen Registration
                 </Button>
               </Link>
               <Link href="/login">
-                <Button variant="outline" size="lg">
+                <Button variant="ghost" size="lg">
                   Sign In
                 </Button>
               </Link>

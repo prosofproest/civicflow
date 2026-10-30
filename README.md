@@ -239,7 +239,31 @@ npm install
 
 ---
 
-## 11. Environment Variables Reference
+## 11. Interactive Demo & Role Switching Guide
+
+CivicFlow features an out-of-the-box demonstration mode that requires **zero cloud credentials** and operates with complete fidelity:
+
+### A. Public Read-Only Demonstration (`/demo`)
+- Access directly via the **Explore Demo** button on the homepage or navigation bar.
+- Renders the complete **45-report synthetic demonstration dataset** for the Astra Municipal District.
+- Features dynamic OpenStreetMap / Leaflet spatial mapping, priority markers, and 250m transit hotspot overlays.
+- Click any marker or table row to inspect deterministic priority factor contributions and AI triage briefs.
+
+### B. Unified Role Login (`/login`)
+- Provides a clean, segmented role selector: `[ Citizen ] [ Officer ] [ Admin ]`.
+- Clicking **Explore Demo as [Role]** instantly logs you into the selected municipal workspace without passwords or OAuth credentials.
+- Real authentication remains strictly role-enforced by server-side user profiles, never granting unauthorized permissions.
+
+### C. Live Municipal Resolution Workflow
+1. **Citizen Submission (`/citizen/submit`)**: File a complaint with text, category, and geolocation. The deterministic engine assigns priority and triggers the Safety Floor for immediate hazards.
+2. **Officer Operations Desk (`/officer`)**: Review incoming tickets, inspect AI factor contributions, assign field officers, and transition status to `in_progress`.
+3. **Verified Resolution (`/officer`)**: Assigned officers record official resolution notes and mark tickets `resolved`.
+4. **Citizen Audit (`/citizen/complaints`)**: Citizens track their complaints, review officer assignments, and read official resolution notes banners alongside an immutable status audit history.
+5. **Admin Management Overview (`/admin`)**: Administrators monitor cross-department operational telemetry, active hazards, duplicate linkages, and spatial clusters.
+
+---
+
+## 12. Environment Variables Reference
 
 Create a local environment file named `.env.local` in the project root based on `.env.example`:
 ```bash
