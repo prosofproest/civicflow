@@ -24,6 +24,7 @@ export async function GET(request: Request) {
         role: user.role,
         active: user.active,
         createdAt: user.createdAt,
+        isDemo: user.isDemo,
       },
     });
   } catch (error: unknown) {
