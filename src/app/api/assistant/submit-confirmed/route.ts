@@ -14,7 +14,7 @@ const confirmedSubmissionSchema = createComplaintSchema.extend({
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const { user, error: authError } = await getServerSessionUser(cookieStore);
+    const { user, isDemo, error: authError } = await getServerSessionUser(cookieStore);
 
     if (!user) {
       return NextResponse.json(
@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
         location: validation.data.location,
         imageUrl: validation.data.imageUrl,
       },
-      user.uid
+      user.uid,
+      { isDemo }
     );
 
     return NextResponse.json({
