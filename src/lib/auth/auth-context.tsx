@@ -87,13 +87,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isMounted) {
-          setUser(data?.user || null);
+          if (data?.user) {
+            setUser(data.user);
+          }
           setIsLoading(false);
         }
       })
       .catch(() => {
         if (isMounted) {
-          setUser(null);
           setIsLoading(false);
         }
       });
@@ -101,11 +102,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (auth) {
       unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
         if (fbUser) {
+          if (isMounted) {
+            setUser((prev) => prev || {
+              uid: fbUser.uid,
+              email: fbUser.email || "",
+              displayName: fbUser.displayName || fbUser.email?.split("@")[0] || "Citizen",
+              role: "citizen",
+              active: true,
+              createdAt: fbUser.metadata.creationTime || new Date().toISOString(),
+            });
+          }
           try {
             const token = await fbUser.getIdToken();
-            await syncServerSession(token);
+            const serverUser = await syncServerSession(token);
+            if (isMounted && serverUser) {
+              setUser(serverUser);
+            }
           } catch (err) {
             console.error("Auto session sync error:", err);
+          }
+        } else {
+          // If no client user and /api/auth/me didn't find one, conclude loading
+          if (isMounted) {
+            setIsLoading(false);
           }
         }
         if (isMounted) {

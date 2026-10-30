@@ -6,7 +6,7 @@
  */
 
 import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
-import { getAdminAuth, getUserProfile, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminAuth, getUserProfile, getOrCreateUserProfile, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { User } from "@/types";
 
 export interface ServerSessionResult {
@@ -38,7 +38,7 @@ export async function getServerSessionUser(
   }
 
   // Graceful support for demo session tokens in automated testing and demo setups
-  if (sessionCookie.startsWith("demo_")) {
+  if (sessionCookie.startsWith("demo_") || sessionCookie === "demo_token") {
     const role = roleCookie === "admin" ? "admin" : roleCookie === "officer" ? "officer" : "citizen";
     return {
       user: {
@@ -71,7 +71,7 @@ export async function getServerSessionUser(
     let uid: string | null = null;
 
     try {
-      const decodedSession = await adminAuth.verifySessionCookie(sessionCookie, true);
+      const decodedSession = await adminAuth.verifySessionCookie(sessionCookie, false);
       uid = decodedSession.uid;
     } catch {
       try {
@@ -86,7 +86,22 @@ export async function getServerSessionUser(
       return { user: null, error: "Unable to extract user identity" };
     }
 
-    const user = await getUserProfile(uid);
+    let user = await getUserProfile(uid);
+    if (!user) {
+      try {
+        const fbUser = await adminAuth.getUser(uid);
+        if (fbUser && fbUser.email) {
+          user = await getOrCreateUserProfile(
+            uid,
+            fbUser.email,
+            fbUser.displayName || undefined
+          );
+        }
+      } catch (authErr) {
+        console.warn("Firebase Auth fallback lookup failed for uid:", uid, authErr);
+      }
+    }
+
     if (!user || !user.active) {
       return { user: null, error: "Account profile inactive or missing" };
     }

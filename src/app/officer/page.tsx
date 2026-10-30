@@ -448,139 +448,252 @@ export default function OfficerPortalPage() {
             />
           </div>
         ) : (
-          /* Recent Complaints Table */
-          <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
-                  <tr>
-                    <th className="py-3 px-4">Ticket</th>
-                    <th className="py-3 px-4">Category</th>
-                    <th className="py-3 px-4">AI Summary / Report</th>
-                    <th className="py-3 px-4">Priority</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Assigned To</th>
-                    <th className="py-3 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredComplaints.length === 0 ? (
+          /* Complaints Stream: Desktop Table + Mobile Card Grid */
+          <div className="space-y-4">
+            {/* Mobile View: Responsive Incident Cards (< md) */}
+            <div className="block md:hidden space-y-3">
+              {filteredComplaints.length === 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-400">
+                  No complaints match your active filters.
+                </div>
+              ) : (
+                filteredComplaints.map((item) => {
+                  const level = item.priority?.level || "low";
+                  const isDup = !!item.duplicate?.ofId;
+                  const isSelected = selectedComplaint?.id === item.id;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`rounded-xl border p-4 bg-white shadow-xs space-y-3 transition-colors ${
+                        isSelected ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 min-w-0">
+                          <span className="font-mono text-xs font-bold text-slate-800 select-all block break-all">
+                            {item.id}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-700 block">
+                            {CATEGORY_LABELS[item.category] || item.category}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <Badge
+                            variant={
+                              item.status === "resolved"
+                                ? "resolved"
+                                : item.status === "in_progress"
+                                ? "in_progress"
+                                : item.status === "assigned"
+                                ? "assigned"
+                                : item.status === "rejected"
+                                ? "rejected"
+                                : "submitted"
+                            }
+                            size="sm"
+                            showDot
+                          >
+                            {STATUS_LABELS[item.status as Status] || item.status}
+                          </Badge>
+                          {item.isSynthetic && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase bg-purple-50 text-purple-700 border border-purple-200">
+                              Sample data
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 space-y-1">
+                        <p className="font-medium text-slate-800 line-clamp-2">
+                          {item.summary || item.text}
+                        </p>
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">
+                            {item.location.address || `${item.location.lat.toFixed(3)}, ${item.location.lng.toFixed(3)}`}
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              level === "critical"
+                                ? "critical"
+                                : level === "high"
+                                ? "high"
+                                : level === "medium"
+                                ? "medium"
+                                : "low"
+                            }
+                            size="sm"
+                            showDot
+                          >
+                            {item.priority?.score || 0} — {level.toUpperCase()}
+                          </Badge>
+                          {isDup && (
+                            <span className="text-[10px] font-semibold text-amber-700">
+                              Duplicate ({Math.round((item.duplicate?.score || 0) * 100)}%)
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-500">
+                          {item.assignedTo ? `Assigned: ${item.assignedTo}` : "Unassigned"}
+                        </span>
+                      </div>
+
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full justify-center"
+                        onClick={() => selectComplaint(item)}
+                      >
+                        Inspect & Act
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[880px] text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400">
-                        No complaints match your active filters.
-                      </td>
+                      <th className="py-3 px-4 w-52">Ticket ID</th>
+                      <th className="py-3 px-4">Category</th>
+                      <th className="py-3 px-4">AI Summary / Report</th>
+                      <th className="py-3 px-4">Priority</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Assigned To</th>
+                      <th className="py-3 px-4 text-right">Action</th>
                     </tr>
-                  ) : (
-                    filteredComplaints.map((item) => {
-                      const level = item.priority?.level || "low";
-                      const isDup = !!item.duplicate?.ofId;
-                      const isSelected = selectedComplaint?.id === item.id;
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredComplaints.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-slate-400">
+                          No complaints match your active filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredComplaints.map((item) => {
+                        const level = item.priority?.level || "low";
+                        const isDup = !!item.duplicate?.ofId;
+                        const isSelected = selectedComplaint?.id === item.id;
 
-                      return (
-                        <tr
-                          key={item.id}
-                          className={`hover:bg-slate-50/80 transition-colors ${
-                            isSelected ? "bg-blue-50/60" : ""
-                          }`}
-                        >
-                          <td className="py-3 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">
-                            <div className="space-y-0.5">
-                              <span className="font-bold text-slate-800">{item.id.substring(0, 14)}</span>
-                              {item.isSynthetic && (
-                                <span className="block px-1 py-0.2 rounded text-[8px] font-semibold uppercase bg-purple-50 text-purple-700 w-fit border border-purple-200">
-                                  Sample data
+                        return (
+                          <tr
+                            key={item.id}
+                            className={`hover:bg-slate-50/80 transition-colors ${
+                              isSelected ? "bg-blue-50/60" : ""
+                            }`}
+                          >
+                            <td className="py-3 px-4 font-mono text-[11px] text-slate-700 whitespace-nowrap">
+                              <div className="space-y-1">
+                                <span className="font-bold text-slate-800 select-all" title={item.id}>
+                                  {item.id}
                                 </span>
-                              )}
-                            </div>
-                          </td>
+                                {item.isSynthetic && (
+                                  <span className="block px-1.5 py-0.2 rounded text-[8px] font-semibold uppercase bg-purple-50 text-purple-700 w-fit border border-purple-200">
+                                    Sample data
+                                  </span>
+                                )}
+                              </div>
+                            </td>
 
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <span className="font-semibold text-slate-800">
-                              {CATEGORY_LABELS[item.category] || item.category}
-                            </span>
-                          </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span className="font-semibold text-slate-800">
+                                {CATEGORY_LABELS[item.category] || item.category}
+                              </span>
+                            </td>
 
-                          <td className="py-3 px-4 max-w-xs sm:max-w-md">
-                            <p className="font-medium text-slate-800 truncate">
-                              {item.summary || item.text}
-                            </p>
-                            <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                              <MapPin className="h-2.5 w-2.5" />
-                              {item.location.address || `${item.location.lat.toFixed(3)}, ${item.location.lng.toFixed(3)}`}
-                            </span>
-                          </td>
+                            <td className="py-3 px-4 max-w-xs sm:max-w-md">
+                              <p className="font-medium text-slate-800 truncate">
+                                {item.summary || item.text}
+                              </p>
+                              <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                <MapPin className="h-2.5 w-2.5" />
+                                {item.location.address || `${item.location.lat.toFixed(3)}, ${item.location.lng.toFixed(3)}`}
+                              </span>
+                            </td>
 
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <Badge
-                              variant={
-                                level === "critical"
-                                  ? "critical"
-                                  : level === "high"
-                                  ? "high"
-                                  : level === "medium"
-                                  ? "medium"
-                                  : "low"
-                              }
-                              size="sm"
-                              showDot
-                            >
-                              {item.priority?.score || 0} — {level.toUpperCase()}
-                            </Badge>
-                          </td>
-
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <div className="space-y-1">
+                            <td className="py-3 px-4 whitespace-nowrap">
                               <Badge
                                 variant={
-                                  item.status === "resolved"
-                                    ? "resolved"
-                                    : item.status === "in_progress"
-                                    ? "in_progress"
-                                    : item.status === "assigned"
-                                    ? "assigned"
-                                    : item.status === "rejected"
-                                    ? "rejected"
-                                    : "submitted"
+                                  level === "critical"
+                                    ? "critical"
+                                    : level === "high"
+                                    ? "high"
+                                    : level === "medium"
+                                    ? "medium"
+                                    : "low"
                                 }
                                 size="sm"
                                 showDot
                               >
-                                {STATUS_LABELS[item.status as Status] || item.status}
+                                {item.priority?.score || 0} — {level.toUpperCase()}
                               </Badge>
-                              {isDup && (
-                                <span className="block text-[9px] font-semibold text-amber-700">
-                                  Duplicate ({Math.round((item.duplicate?.score || 0) * 100)}%)
+                            </td>
+
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <div className="space-y-1">
+                                <Badge
+                                  variant={
+                                    item.status === "resolved"
+                                      ? "resolved"
+                                      : item.status === "in_progress"
+                                      ? "in_progress"
+                                      : item.status === "assigned"
+                                      ? "assigned"
+                                      : item.status === "rejected"
+                                      ? "rejected"
+                                      : "submitted"
+                                  }
+                                  size="sm"
+                                  showDot
+                                >
+                                  {STATUS_LABELS[item.status as Status] || item.status}
+                                </Badge>
+                                {isDup && (
+                                  <span className="block text-[9px] font-semibold text-amber-700">
+                                    Duplicate ({Math.round((item.duplicate?.score || 0) * 100)}%)
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
+                              {item.assignedTo ? (
+                                <span className="inline-flex items-center gap-1 font-medium text-slate-800">
+                                  <UserCheck className="h-3 w-3 text-blue-600" />
+                                  {item.assignedTo}
                                 </span>
+                              ) : (
+                                <span className="text-slate-400 italic">Unassigned</span>
                               )}
-                            </div>
-                          </td>
+                            </td>
 
-                          <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
-                            {item.assignedTo ? (
-                              <span className="inline-flex items-center gap-1 font-medium text-slate-800">
-                                <UserCheck className="h-3 w-3 text-blue-600" />
-                                {item.assignedTo}
-                              </span>
-                            ) : (
-                              <span className="text-slate-400 italic">Unassigned</span>
-                            )}
-                          </td>
-
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => selectComplaint(item)}
-                            >
-                              Inspect & Act
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => selectComplaint(item)}
+                              >
+                                Inspect & Act
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -725,6 +838,19 @@ export default function OfficerPortalPage() {
                         ))}
                       </ul>
                     )}
+                  </div>
+                )}
+
+                {/* Saved Resolution Notes */}
+                {selectedComplaint.resolutionNotes && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                      <span>Saved Officer Resolution Notes</span>
+                    </div>
+                    <p className="text-emerald-950 font-medium leading-relaxed bg-white p-3 rounded-lg border border-emerald-200">
+                      {selectedComplaint.resolutionNotes}
+                    </p>
                   </div>
                 )}
 

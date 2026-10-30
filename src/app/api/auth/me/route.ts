@@ -1,46 +1,15 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getAdminAuth, getUserProfile } from "@/lib/firebase/admin";
+import { getServerSessionUser } from "@/lib/auth/server-session";
 
 export async function GET() {
   const cookieStore = await cookies();
   try {
-    const sessionCookie = cookieStore.get("civicflow_session")?.value;
+    const { user, error } = await getServerSessionUser(cookieStore);
 
-    if (!sessionCookie) {
-      return NextResponse.json({ user: null }, { status: 401 });
-    }
-
-    const adminAuth = getAdminAuth();
-    let uid: string | null = null;
-
-    try {
-      const decodedSession = await adminAuth.verifySessionCookie(
-        sessionCookie,
-        true
-      );
-      uid = decodedSession.uid;
-    } catch {
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(sessionCookie);
-        uid = decodedToken.uid;
-      } catch {
-        return NextResponse.json(
-          { user: null, error: "Session expired or invalid" },
-          { status: 401 }
-        );
-      }
-    }
-
-    if (!uid) {
-      return NextResponse.json({ user: null }, { status: 401 });
-    }
-
-    const user = await getUserProfile(uid);
-
-    if (!user || !user.active) {
+    if (!user) {
       return NextResponse.json(
-        { user: null, error: "User profile not found or deactivated" },
+        { user: null, error: error || "Session expired or invalid" },
         { status: 401 }
       );
     }
