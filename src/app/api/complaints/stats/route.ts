@@ -6,7 +6,7 @@ import { getComplaintStats } from "@/lib/services/complaints";
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const { user: sessionUser } = await getServerSessionUser(cookieStore);
+    const { user: sessionUser, isDemo } = await getServerSessionUser(cookieStore);
 
     // Only authenticated users can access aggregated statistics
     if (!sessionUser) {
@@ -16,7 +16,7 @@ export async function GET() {
       );
     }
 
-    const stats = await getComplaintStats();
+    const stats = await getComplaintStats({ isDemo });
 
     return NextResponse.json({
       ok: true,
