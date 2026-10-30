@@ -34,6 +34,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  switchDemoRole: (role: "citizen" | "officer" | "admin") => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -179,7 +180,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleLogout = async (): Promise<void> => {
     setIsLoading(true);
     try {
-      await signOutUser();
+      if (auth) {
+        await signOutUser().catch(() => {});
+      }
       await fetch("/api/auth/logout", { method: "POST" });
       setUser(null);
     } finally {
@@ -190,6 +193,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleResetPassword = async (email: string): Promise<void> => {
     await sendPasswordReset(email);
   };
+
+  const switchDemoRole = useCallback(
+    async (role: "citizen" | "officer" | "admin"): Promise<User> => {
+      setIsLoading(true);
+      try {
+        const res = await fetch("/api/auth/demo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok || !data.user) {
+          throw new Error(data.error || "Failed to switch demo role");
+        }
+
+        setUser(data.user);
+        return data.user;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   return (
     <AuthContext.Provider
@@ -204,6 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         logout: handleLogout,
         resetPassword: handleResetPassword,
         refreshProfile,
+        switchDemoRole,
       }}
     >
       {children}

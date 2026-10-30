@@ -63,8 +63,8 @@ function ensureDemoStoreInitialized() {
 /**
  * Retrieves candidate complaints formatted for duplicate detection.
  */
-async function getCandidateComplaints(): Promise<ComplaintCandidate[]> {
-  if (isFirebaseAdminConfigured()) {
+async function getCandidateComplaints(options?: { isDemo?: boolean }): Promise<ComplaintCandidate[]> {
+  if (!options?.isDemo && isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
       if (db) {
@@ -109,8 +109,10 @@ async function getCandidateComplaints(): Promise<ComplaintCandidate[]> {
  */
 export async function createComplaint(
   input: CreateComplaintInput,
-  reporterUid: string
+  reporterUid: string,
+  options?: { isDemo?: boolean }
 ): Promise<Complaint> {
+  const isDemo = Boolean(options?.isDemo || reporterUid.startsWith("demo_"));
   const now = new Date().toISOString();
   const complaintId = `complaint_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -119,7 +121,7 @@ export async function createComplaint(
   const { analysis, aiMeta } = aiResult;
 
   // 2. Fetch active candidates and run deterministic duplicate detection
-  const candidates = await getCandidateComplaints();
+  const candidates = await getCandidateComplaints({ isDemo });
   const targetCandidate: ComplaintCandidate = {
     id: complaintId,
     text: input.text,
@@ -173,13 +175,13 @@ export async function createComplaint(
       status: aiMeta.status,
       model: aiMeta.model,
     },
-    isSynthetic: false,
+    isSynthetic: isDemo,
     createdAt: now,
     updatedAt: now,
   };
 
-  // 6. Save to storage
-  if (isFirebaseAdminConfigured()) {
+  // 6. Save to Firestore ONLY for real user submissions
+  if (!isDemo && isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
       if (db) {
@@ -191,7 +193,7 @@ export async function createComplaint(
     }
   }
 
-  // Always retain in in-memory store for session continuity
+  // Always retain in in-memory store for session continuity and demo persistence
   ensureDemoStoreInitialized();
   inMemoryComplaints.set(complaintId, newComplaint);
 
@@ -206,24 +208,26 @@ export async function getComplaints(options?: {
   category?: Category;
   status?: string;
   limit?: number;
+  isDemo?: boolean;
 }): Promise<Complaint[]> {
   const maxLimit = options?.limit || 100;
+  const isDemo = Boolean(options?.isDemo || options?.reporterUid?.startsWith("demo_"));
 
-  if (isFirebaseAdminConfigured()) {
+  if (!isDemo && isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
       if (db) {
         let query: FirebaseFirestore.Query = db.collection("complaints");
 
-      if (options?.reporterUid) {
-        query = query.where("reporterUid", "==", options.reporterUid);
-      }
-      if (options?.category) {
-        query = query.where("category", "==", options.category);
-      }
-      if (options?.status) {
-        query = query.where("status", "==", options.status);
-      }
+        if (options?.reporterUid) {
+          query = query.where("reporterUid", "==", options.reporterUid);
+        }
+        if (options?.category) {
+          query = query.where("category", "==", options.category);
+        }
+        if (options?.status) {
+          query = query.where("status", "==", options.status);
+        }
 
         const snapshot = await query.limit(maxLimit).get();
         if (!snapshot.empty) {
@@ -240,7 +244,7 @@ export async function getComplaints(options?: {
     }
   }
 
-  // Fallback / Demo Mode
+  // Demo Mode: Query shared in-memory dataset
   ensureDemoStoreInitialized();
   let results = Array.from(inMemoryComplaints.values());
 
@@ -292,8 +296,13 @@ export async function seedSyntheticDataset(): Promise<{ seededCount: number; isF
 /**
  * Retrieves a single complaint by its unique ID.
  */
-export async function getComplaintById(id: string): Promise<Complaint | null> {
-  if (isFirebaseAdminConfigured()) {
+export async function getComplaintById(
+  id: string,
+  options?: { isDemo?: boolean }
+): Promise<Complaint | null> {
+  const isDemo = Boolean(options?.isDemo || id.startsWith("rep_"));
+
+  if (!isDemo && isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
       if (db) {
@@ -324,10 +333,17 @@ export async function updateComplaint(
   actor: {
     uid: string;
     role: Role;
-  }
+  },
+  options?: { isDemo?: boolean }
 ): Promise<{ complaint: Complaint; event: StatusEvent }> {
+  const isDemo = Boolean(
+    options?.isDemo ||
+    actor.uid.startsWith("demo_") ||
+    id.startsWith("rep_")
+  );
+
   ensureDemoStoreInitialized();
-  const existing = await getComplaintById(id);
+  const existing = await getComplaintById(id, { isDemo });
 
   if (!existing) {
     throw new Error(`Complaint ${id} not found`);
@@ -358,8 +374,8 @@ export async function updateComplaint(
     updatedAt: now,
   };
 
-  // 1. Persist to Firestore if configured
-  if (isFirebaseAdminConfigured()) {
+  // 1. Persist to Firestore ONLY for real complaints
+  if (!isDemo && isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
       if (db) {
@@ -395,8 +411,13 @@ export async function updateComplaint(
 /**
  * Retrieves the status progression history (audit trail) for a complaint.
  */
-export async function getStatusEvents(complaintId: string): Promise<StatusEvent[]> {
-  if (isFirebaseAdminConfigured()) {
+export async function getStatusEvents(
+  complaintId: string,
+  options?: { isDemo?: boolean }
+): Promise<StatusEvent[]> {
+  const isDemo = Boolean(options?.isDemo || complaintId.startsWith("rep_"));
+
+  if (!isDemo && isFirebaseAdminConfigured()) {
     try {
       const db = getAdminFirestore();
       if (db) {
@@ -455,8 +476,8 @@ export interface ComplaintStats {
 /**
  * Computes high-level distribution statistics across complaints.
  */
-export async function getComplaintStats(): Promise<ComplaintStats> {
-  const all = await getComplaints({ limit: 500 });
+export async function getComplaintStats(options?: { isDemo?: boolean }): Promise<ComplaintStats> {
+  const all = await getComplaints({ limit: 500, isDemo: options?.isDemo });
 
   const byCategory = CATEGORIES.reduce((acc, cat) => {
     acc[cat] = 0;

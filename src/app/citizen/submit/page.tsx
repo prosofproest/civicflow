@@ -31,12 +31,54 @@ export default function CitizenSubmitPage() {
   const [address, setAddress] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isPrefilled, setIsPrefilled] = useState(false);
 
   // Status & Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdComplaint, setCreatedComplaint] = useState<Complaint | null>(null);
+
+  // Populate from URL search params or assistant prefill
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const search = new URLSearchParams(window.location.search);
+    const prefillDesc = search.get("description") || search.get("text");
+    const prefillCat = search.get("category");
+    const prefillAddr = search.get("address");
+    const prefillLat = search.get("lat");
+    const prefillLng = search.get("lng");
+
+    const timer = setTimeout(() => {
+      let filled = false;
+      if (prefillDesc) {
+        setDescription(decodeURIComponent(prefillDesc));
+        filled = true;
+      }
+      if (prefillCat && CATEGORIES.includes(prefillCat as Category)) {
+        setCategory(prefillCat as Category);
+        filled = true;
+      }
+      if (prefillAddr) {
+        setAddress(decodeURIComponent(prefillAddr));
+        filled = true;
+      }
+      if (prefillLat) {
+        setLat(prefillLat);
+        filled = true;
+      }
+      if (prefillLng) {
+        setLng(prefillLng);
+        filled = true;
+      }
+      if (filled) {
+        setIsPrefilled(true);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Real-time immediate safety hazard detection
   const detectedHazard = detectSafetyHazard(description);
@@ -341,6 +383,25 @@ export default function CitizenSubmitPage() {
             Submit municipal infrastructure failures for AI categorization, priority triage, and departmental dispatch.
           </p>
         </div>
+
+        {/* Assistant Prefill Banner */}
+        {isPrefilled && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50/90 p-3.5 text-xs text-blue-900 shadow-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="h-4 w-4 text-blue-600 shrink-0" />
+              <span>
+                <strong>CivicFlow AI Assistant</strong> pre-filled this draft based on your chat conversation. Please review the details below and confirm submission.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsPrefilled(false)}
+              className="text-xs text-blue-700 hover:text-blue-900 font-medium underline shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Error Alert */}
         {errorMessage && (

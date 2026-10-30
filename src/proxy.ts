@@ -6,6 +6,16 @@ export function proxy(request: NextRequest) {
 
   const sessionCookie = request.cookies.get("civicflow_session")?.value;
   const roleCookie = request.cookies.get("civicflow_role")?.value;
+  const modeCookie = request.cookies.get("civicflow_mode")?.value;
+  const demoRoleCookie = request.cookies.get("civicflow_demo_role")?.value;
+
+  const isDemo =
+    modeCookie === "demo" ||
+    Boolean(demoRoleCookie) ||
+    sessionCookie?.startsWith("demo_") === true ||
+    sessionCookie === "demo_token";
+
+  const effectiveRole = isDemo ? (demoRoleCookie || roleCookie || "citizen") : roleCookie;
 
   const isAuthRoute =
     pathname.startsWith("/login") ||
@@ -26,27 +36,27 @@ export function proxy(request: NextRequest) {
 
   // 2. Authenticated users attempting to access auth forms (login/register)
   if (isAuthRoute && sessionCookie) {
-    if (roleCookie === "admin") {
+    if (effectiveRole === "admin") {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
-    if (roleCookie === "officer") {
+    if (effectiveRole === "officer") {
       return NextResponse.redirect(new URL("/officer", request.url));
     }
     return NextResponse.redirect(new URL("/citizen", request.url));
   }
 
   // 3. Role-based access control for protected routes
-  if (sessionCookie && roleCookie) {
+  if (sessionCookie && effectiveRole) {
     // Only admins can access /admin
-    if (pathname.startsWith("/admin") && roleCookie !== "admin") {
-      if (roleCookie === "officer") {
+    if (pathname.startsWith("/admin") && effectiveRole !== "admin") {
+      if (effectiveRole === "officer") {
         return NextResponse.redirect(new URL("/officer", request.url));
       }
       return NextResponse.redirect(new URL("/citizen", request.url));
     }
 
     // Only officers and admins can access /officer
-    if (pathname.startsWith("/officer") && roleCookie === "citizen") {
+    if (pathname.startsWith("/officer") && effectiveRole === "citizen") {
       return NextResponse.redirect(new URL("/citizen", request.url));
     }
   }

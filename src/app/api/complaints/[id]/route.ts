@@ -11,7 +11,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const complaint = await getComplaintById(id);
+    const cookieStore = await cookies();
+    const { user: sessionUser, isDemo } = await getServerSessionUser(cookieStore);
+
+    const complaint = await getComplaintById(id, { isDemo });
 
     if (!complaint) {
       return NextResponse.json(
@@ -19,9 +22,6 @@ export async function GET(
         { status: 404 }
       );
     }
-
-    const cookieStore = await cookies();
-    const { user: sessionUser } = await getServerSessionUser(cookieStore);
 
     // Citizens can only view their own complaint
     if (sessionUser && sessionUser.role === "citizen" && complaint.reporterUid !== sessionUser.uid) {
@@ -31,7 +31,7 @@ export async function GET(
       );
     }
 
-    const events = await getStatusEvents(id);
+    const events = await getStatusEvents(id, { isDemo });
 
     return NextResponse.json({
       ok: true,
@@ -53,7 +53,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const cookieStore = await cookies();
-    const { user: sessionUser } = await getServerSessionUser(cookieStore);
+    const { user: sessionUser, isDemo } = await getServerSessionUser(cookieStore);
 
     if (!sessionUser) {
       return NextResponse.json(
@@ -92,7 +92,8 @@ export async function PATCH(
       {
         uid: sessionUser.uid,
         role: sessionUser.role,
-      }
+      },
+      { isDemo }
     );
 
     return NextResponse.json({

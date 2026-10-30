@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, ExternalLink, LogOut, User as UserIcon } from "lucide-react";
@@ -20,13 +20,43 @@ export const PageShell: React.FC<PageShellProps> = ({
   hideNav = false,
 }) => {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, switchDemoRole } = useAuth();
+  const [isSwitching, setIsSwitching] = useState(false);
 
   const getPortalLink = () => {
     if (!user) return "/login";
     if (user.role === "admin") return "/admin";
     if (user.role === "officer") return "/officer";
     return "/citizen";
+  };
+
+  const isDemo = Boolean(user?.isDemo || user?.uid.startsWith("demo_"));
+  const activeRole = user?.role || "citizen";
+
+  const handleRoleSwitch = async (targetRole: "citizen" | "officer" | "admin") => {
+    if (isSwitching) return;
+    if (activeRole === targetRole) {
+      if (targetRole === "admin") router.push("/admin");
+      else if (targetRole === "officer") router.push("/officer");
+      else router.push("/citizen");
+      return;
+    }
+
+    setIsSwitching(true);
+    try {
+      await switchDemoRole(targetRole);
+      if (targetRole === "admin") {
+        router.push("/admin");
+      } else if (targetRole === "officer") {
+        router.push("/officer");
+      } else {
+        router.push("/citizen");
+      }
+    } catch (err) {
+      console.error("Failed to switch demo role:", err);
+    } finally {
+      setIsSwitching(false);
+    }
   };
 
   return (
@@ -70,50 +100,54 @@ export const PageShell: React.FC<PageShellProps> = ({
 
               {user ? (
                 <div className="flex items-center gap-1 sm:gap-2">
-                  {user.uid.startsWith("demo_") && (
-                    <div className="hidden sm:inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                  {isDemo && (
+                    <div
+                      role="group"
+                      aria-label="Demo Role Switcher"
+                      className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs"
+                    >
                       <button
-                        onClick={async () => {
-                          await fetch("/api/auth/demo", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ role: "citizen" }),
-                          });
-                          router.push("/citizen");
-                        }}
-                        className={`px-2 py-1 rounded-md font-medium transition-all ${
-                          user.role === "citizen" ? "bg-white text-blue-700 shadow-2xs font-semibold" : "text-slate-600 hover:text-slate-900"
-                        }`}
+                        type="button"
+                        id="demo-switcher-citizen"
+                        onClick={() => handleRoleSwitch("citizen")}
+                        disabled={isSwitching}
+                        className={cn(
+                          "px-2 sm:px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px] sm:text-xs",
+                          activeRole === "citizen"
+                            ? "bg-white text-blue-700 shadow-2xs font-semibold"
+                            : "text-slate-600 hover:text-slate-900"
+                        )}
+                        title="Switch to Demo Citizen Role"
                       >
                         Citizen
                       </button>
                       <button
-                        onClick={async () => {
-                          await fetch("/api/auth/demo", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ role: "officer" }),
-                          });
-                          router.push("/officer");
-                        }}
-                        className={`px-2 py-1 rounded-md font-medium transition-all ${
-                          user.role === "officer" ? "bg-white text-blue-700 shadow-2xs font-semibold" : "text-slate-600 hover:text-slate-900"
-                        }`}
+                        type="button"
+                        id="demo-switcher-officer"
+                        onClick={() => handleRoleSwitch("officer")}
+                        disabled={isSwitching}
+                        className={cn(
+                          "px-2 sm:px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px] sm:text-xs",
+                          activeRole === "officer"
+                            ? "bg-white text-blue-700 shadow-2xs font-semibold"
+                            : "text-slate-600 hover:text-slate-900"
+                        )}
+                        title="Switch to Demo Officer Role"
                       >
                         Officer
                       </button>
                       <button
-                        onClick={async () => {
-                          await fetch("/api/auth/demo", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ role: "admin" }),
-                          });
-                          router.push("/admin");
-                        }}
-                        className={`px-2 py-1 rounded-md font-medium transition-all ${
-                          user.role === "admin" ? "bg-white text-blue-700 shadow-2xs font-semibold" : "text-slate-600 hover:text-slate-900"
-                        }`}
+                        type="button"
+                        id="demo-switcher-admin"
+                        onClick={() => handleRoleSwitch("admin")}
+                        disabled={isSwitching}
+                        className={cn(
+                          "px-2 sm:px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px] sm:text-xs",
+                          activeRole === "admin"
+                            ? "bg-white text-blue-700 shadow-2xs font-semibold"
+                            : "text-slate-600 hover:text-slate-900"
+                        )}
+                        title="Switch to Demo Administrator Role"
                       >
                         Admin
                       </button>
@@ -129,7 +163,7 @@ export const PageShell: React.FC<PageShellProps> = ({
                   </Link>
                   <button
                     onClick={() => logout()}
-                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                     title="Sign Out"
                     aria-label="Sign Out"
                   >

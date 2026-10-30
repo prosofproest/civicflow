@@ -28,7 +28,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect");
 
-  const { loginWithEmail, loginWithGoogle, isConfigured } = useAuth();
+  const { loginWithEmail, loginWithGoogle, isConfigured, switchDemoRole } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,20 +42,13 @@ function LoginForm() {
   const handleExploreDemo = async () => {
     setIsDemoLoading(true);
     try {
-      const res = await fetch("/api/auth/demo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: selectedDemoRole }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        if (selectedDemoRole === "admin") {
-          router.push("/admin");
-        } else if (selectedDemoRole === "officer") {
-          router.push("/officer");
-        } else {
-          router.push("/citizen");
-        }
+      await switchDemoRole(selectedDemoRole);
+      if (selectedDemoRole === "admin") {
+        router.push("/admin");
+      } else if (selectedDemoRole === "officer") {
+        router.push("/officer");
+      } else {
+        router.push("/citizen");
       }
     } catch (err) {
       console.error("Failed to switch demo role:", err);

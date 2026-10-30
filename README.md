@@ -340,7 +340,7 @@ curl -X POST http://localhost:3000/api/seed
 ```
 
 ### Running Test Suite
-Execute the 29 unit tests covering Priority, Duplicate Detection, Hotspots, AI Fallback, Safety Floor, Validation, and Officer Resolution Workflow:
+Execute the 33 unit tests covering Priority, Duplicate Detection, Hotspots, AI Fallback, Safety Floor, Validation, Security & Authorization, and Officer Resolution Workflow:
 ```bash
 npm test
 ```

@@ -6,7 +6,7 @@ import { createComplaint, getComplaints } from "@/lib/services/complaints";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
-  const { user, error: authError } = await getServerSessionUser(cookieStore);
+  const { user, isDemo, error: authError } = await getServerSessionUser(cookieStore);
 
   if (!user) {
     return NextResponse.json(
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     // Always enforce reporterUid from verified server session
-    const complaint = await createComplaint(validation.data, user.uid);
+    const complaint = await createComplaint(validation.data, user.uid, { isDemo });
 
     return NextResponse.json({
       ok: true,
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
-  const { user } = await getServerSessionUser(cookieStore);
+  const { user, isDemo } = await getServerSessionUser(cookieStore);
 
   if (!user) {
     return NextResponse.json(
@@ -78,6 +78,7 @@ export async function GET(request: Request) {
       category: queryData.category,
       status: queryData.status,
       limit: queryData.limit || 50,
+      isDemo,
     });
 
     return NextResponse.json({

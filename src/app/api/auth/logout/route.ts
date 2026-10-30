@@ -6,23 +6,20 @@ export async function POST() {
   try {
     const isProduction = process.env.NODE_ENV === "production";
 
-    cookieStore.set("civicflow_session", "", {
+    const clearOptions = {
       maxAge: 0,
       httpOnly: true,
       secure: isProduction,
       path: "/",
-      sameSite: "lax",
+      sameSite: "lax" as const,
       expires: new Date(0),
-    });
+    };
 
-    cookieStore.set("civicflow_role", "", {
-      maxAge: 0,
-      httpOnly: true,
-      secure: isProduction,
-      path: "/",
-      sameSite: "lax",
-      expires: new Date(0),
-    });
+    cookieStore.set("civicflow_session", "", clearOptions);
+    cookieStore.set("civicflow_role", "", clearOptions);
+    cookieStore.set("civicflow_mode", "", clearOptions);
+    cookieStore.set("civicflow_demo_session", "", clearOptions);
+    cookieStore.set("civicflow_demo_role", "", clearOptions);
 
     return NextResponse.json({ success: true, message: "Logged out successfully" });
   } catch (error) {

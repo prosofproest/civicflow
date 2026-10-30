@@ -22,6 +22,7 @@ export interface User {
   role: Role;
   active: boolean;
   createdAt: string; // ISO 8601 string
+  isDemo?: boolean;
 }
 
 export interface PriorityFactor {
